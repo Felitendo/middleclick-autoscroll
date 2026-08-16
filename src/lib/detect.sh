@@ -97,6 +97,9 @@ _mca_desktop_read() {
 			Hidden=*)          DE_HIDDEN="${line#Hidden=}" ;;
 			Categories=*)      DE_CATEGORIES="${line#Categories=}" ;;
 			MimeType=*)        DE_MIME="${line#MimeType=}" ;;
+			# Only a generated shadow. An entry we edited in place carries
+			# X-MCA-Patched and is still the application's real entry, so it
+			# has to stay in the scan.
 			X-MCA-Generated=*) DE_OURS=1 ;;
 		esac
 	done < "$file"
@@ -399,16 +402,14 @@ MCA_PROGS=()      # resolved program, or a flatpak app id
 MCA_KINDS=()      # app | browser | flatpak | steam | unknown | no
 
 # A scan reads every desktop entry on the system, so the menu does it once and
-# then redraws from what it found. Anything that changes the answer - applying,
-# reverting - invalidates it explicitly.
+# then redraws from what it found. Applying rescans on its own, so nothing else
+# has to remember to invalidate this.
 MCA_SCANNED=0
 
 mca_scan_once() {
 	(( MCA_SCANNED )) && return 0
 	mca_scan
 }
-
-mca_scan_invalidate() { MCA_SCANNED=0; }
 
 mca_scan() {
 	local dir file id name exec_line prog kind i

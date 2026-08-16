@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: middleclick-autoscroll 1.0.0\n"
+"Project-Id-Version: middleclick-autoscroll 1.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/Felitendo/middleclick-autoscroll/issues\n"
 "POT-Creation-Date: 2026-08-16 00:00+0200\n"
 "PO-Revision-Date: 2026-08-16 00:00+0200\n"

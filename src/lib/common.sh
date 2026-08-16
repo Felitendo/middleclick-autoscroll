@@ -158,7 +158,6 @@ mca_head() { printf '\n%s%s%s\n\n' "$MCA_C_BOLD$MCA_C_BLUE" "$*" "$MCA_C_RESET";
 mca_ok()   { [[ -n $MCA_QUIET ]] || printf '%s✔%s %s\n' "$MCA_C_GREEN" "$MCA_C_RESET" "$*"; }
 mca_bad()  { MCA_UI_NEEDS_ACK=1; printf '%s✘%s %s\n' "$MCA_C_RED" "$MCA_C_RESET" "$*" >&2; }
 mca_note() { MCA_UI_NEEDS_ACK=1; [[ -n $MCA_QUIET ]] || printf '%s•%s %s\n' "$MCA_C_DIM" "$MCA_C_RESET" "$*"; }
-mca_debug() { [[ -n ${MCA_DEBUG:-} ]] && printf 'debug: %s\n' "$*" >&2; return 0; }
 
 mca_have() { command -v "$1" > /dev/null 2>&1; }
 
@@ -239,22 +238,6 @@ mca_ledger_forget() {
 	return 0
 }
 
-# mca_ledger_has <path>
-mca_ledger_has() {
-	[[ -f $MCA_LEDGER ]] || return 1
-	awk -F'\t' -v p="$1" '$2 == p { found = 1 } END { exit !found }' "$MCA_LEDGER"
-}
-
-# mca_ledger_detail <path>
-mca_ledger_detail() {
-	[[ -f $MCA_LEDGER ]] || return 1
-	awk -F'\t' -v p="$1" '$2 == p { print $3; exit }' "$MCA_LEDGER"
-}
-
-mca_ledger_count() {
-	[[ -f $MCA_LEDGER ]] || { printf '0\n'; return; }
-	grep -c . "$MCA_LEDGER" 2>/dev/null || printf '0\n'
-}
 
 # mca_backup <file>
 # Copies a file aside before it is edited in place, and prints the name the

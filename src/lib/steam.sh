@@ -18,7 +18,6 @@
 # The file comes back on every client update, and the watcher re-applies the
 # patch when that happens.
 
-MCA_STEAM_EXEC='exec ./steamwebhelper "$@"'
 MCA_STEAM_LAUNCH_FLAG='-noverifyfiles'
 
 # Every place a Steam installation is known to live, resolved and de-duplicated
@@ -106,7 +105,7 @@ mca_steam_apply() {
 		script="$(mca_steam_script "$root")" || continue
 		found=1
 
-		mca_steam_script_patched "$script" && { MCA_TOUCHED+=("$script"); continue; }
+		mca_steam_script_patched "$script" && continue
 
 		lineno="$(_mca_steam_exec_line "$script")"
 		if [[ -z $lineno ]]; then
@@ -125,7 +124,6 @@ mca_steam_apply() {
 		fi
 		chmod +x -- "$script" 2>/dev/null || true
 		mca_ledger_add steam "$script" "$backup"
-		MCA_TOUCHED+=("$script")
 	done < <(mca_steam_roots)
 
 	(( found ))

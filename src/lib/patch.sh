@@ -195,9 +195,6 @@ _mca_flags_write() {
 		mca_ledger_add flags "$file" block
 	fi
 
-	# Every application whose flag file was touched counts as covered, so the
-	# status line can say how many there are.
-	MCA_TOUCHED+=("$file")
 	return 0
 }
 
@@ -255,12 +252,20 @@ mca_flags_revert() {
 # Desktop entries
 # ---------------------------------------------------------------------------
 
-# _mca_desktop_transform <file> [flags] [position]
+# A generated entry and an entry that was edited in place look similar and must
+# never be confused: the first one is ours to delete, the second one is the
+# user's file with one line changed and has to be restored from its backup. They
+# carry different markers so that the scan, the "already done" checks and the
+# undo can all tell them apart.
+MCA_MARK_SHADOW='X-MCA-Generated'
+MCA_MARK_INPLACE='X-MCA-Patched'
+
+# _mca_desktop_transform <file> <marker> [flags] [position]
 # The whole file with every Exec line rewritten - the main one and the one in
 # each Desktop Action, because those are the right-click menu entries and a
 # user who starts Steam from "Library" expects the same behaviour there.
 _mca_desktop_transform() {
-	local file="$1" flags="${2:-}" where="${3:-before-fields}"
+	local file="$1" marker="$2" flags="${3:-}" where="${4:-before-fields}"
 	local line rest new marked=0
 
 	while IFS= read -r line || [[ -n $line ]]; do
@@ -283,7 +288,7 @@ _mca_desktop_transform() {
 		printf '%s\n' "$line"
 
 		if (( ! marked )) && [[ $line =~ ^[[:space:]]*\[Desktop\ Entry\][[:space:]]*$ ]]; then
-			printf 'X-MCA-Generated=%s\n' "$MCA_VERSION"
+			printf '%s=%s\n' "$marker" "$MCA_VERSION"
 			marked=1
 		fi
 	done < "$file"
@@ -300,9 +305,9 @@ mca_desktop_apply() {
 		# The user's own entry - an AppImage, a web app shortcut, something
 		# installed by hand. There is nowhere to shadow it from, so it is
 		# edited directly and the original is kept.
-		grep -q '^X-MCA-Generated=' "$src" 2>/dev/null && return 0
+		grep -q "^$MCA_MARK_INPLACE=" "$src" 2>/dev/null && return 0
 
-		content="$(_mca_desktop_transform "$src" "$flags" "$where")"
+		content="$(_mca_desktop_transform "$src" "$MCA_MARK_INPLACE" "$flags" "$where")"
 		[[ -n $content ]] || return 1
 		[[ "$content" == "$(< "$src")" ]] && return 0
 
@@ -311,18 +316,18 @@ mca_desktop_apply() {
 			MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 		fi
 		mca_ledger_add inplace "$src" "$backup"
-		MCA_TOUCHED+=("$src")
 		return 0
 	fi
 
-	content="$(_mca_desktop_transform "$src" "$flags" "$where")"
+	content="$(_mca_desktop_transform "$src" "$MCA_MARK_SHADOW" "$flags" "$where")"
 	[[ -n $content ]] || return 1
 
 	mkdir -p "$MCA_APPDIR" 2>/dev/null || return 1
 
-	# Something is already shadowing this entry. If it is not ours it is the
-	# user's own override and is left exactly as it is.
-	if [[ -e $target ]] && ! grep -q '^X-MCA-Generated=' "$target" 2>/dev/null; then
+	# Something is already shadowing this entry. Unless it is a shadow of ours,
+	# it is the user's own file - possibly one we edited in place earlier - and
+	# overwriting it here would lose it.
+	if [[ -e $target ]] && ! grep -q "^$MCA_MARK_SHADOW=" "$target" 2>/dev/null; then
 		return 1
 	fi
 
@@ -330,7 +335,6 @@ mca_desktop_apply() {
 		MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 	fi
 	mca_ledger_add shadow "$target" "$src"
-	MCA_TOUCHED+=("$target")
 	return 0
 }
 
@@ -349,7 +353,7 @@ mca_autostart_apply() {
 
 	for file in "$dir"/*.desktop; do
 		[[ -f $file ]] || continue
-		grep -q '^X-MCA-Generated=' "$file" 2>/dev/null && continue
+		grep -q "^$MCA_MARK_INPLACE=" "$file" 2>/dev/null && continue
 
 		exec_line="$(mca_desktop_get "$file" Exec)"
 		[[ -n $exec_line ]] || continue
@@ -358,7 +362,7 @@ mca_autostart_apply() {
 		prog="$MCA_PROG"
 		mca_is_chromium "$prog" || continue
 
-		content="$(_mca_desktop_transform "$file")"
+		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
 		[[ -n $content ]] || continue
 		[[ "$content" == "$(< "$file")" ]] && continue
 
@@ -367,7 +371,6 @@ mca_autostart_apply() {
 			MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 		fi
 		mca_ledger_add inplace "$file" "$backup"
-		MCA_TOUCHED+=("$file")
 	done
 }
 
@@ -412,7 +415,6 @@ mca_spotify_apply() {
 		MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 	fi
 	mca_ledger_add inplace "$file" "${backup:-}"
-	MCA_TOUCHED+=("$file")
 	return 0
 }
 
@@ -431,7 +433,7 @@ mca_revert_all() {
 		case "$kind" in
 			shadow)
 				# Only remove what is still recognisably ours.
-				if [[ -f $path ]] && grep -q '^X-MCA-Generated=' "$path" 2>/dev/null; then
+				if [[ -f $path ]] && grep -q "^$MCA_MARK_SHADOW=" "$path" 2>/dev/null; then
 					rm -f -- "$path"
 					MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 				fi

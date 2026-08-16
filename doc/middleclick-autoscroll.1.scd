@@ -72,9 +72,12 @@ Two ways, chosen per application.
 	Flatpaks, a copy of the desktop entry with the argument appended is written
 	to _~/.local/share/applications_, where it shadows the system one. Entries
 	that already live there - AppImages, web app shortcuts - are edited in
-	place, with the original kept. Every generated entry is marked with
-	*X-MCA-Generated*; an entry that is not marked is somebody else's and is
-	left alone.
+	place, with the original kept.
+
+	A generated entry is marked *X-MCA-Generated* and an entry edited in place
+	*X-MCA-Patched*. The two are never confused: the first is deleted when
+	undoing, the second is restored from its backup. An entry with neither
+	marker belongs to somebody else and is left alone.
 
 Programs that start themselves at login write their own entry into
 _~/.config/autostart_ pointing straight at their binary, bypassing the menu

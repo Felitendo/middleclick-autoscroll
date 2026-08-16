@@ -371,12 +371,32 @@ mca_ui_apps() {
 
 	locale="$(mca_ui_locale)"
 
-	local title hint legend
+	local title hint legend warn
 	mca_msg_into "$locale" "Applications"; title="$MCA_MSG_RESULT"
 	mca_msg_into "$locale" "Up/Down select - Space turns one on or off - q goes back"
 	hint="$MCA_MSG_RESULT"
 	mca_msg_into "$locale" "Anything not identified is left alone until it is turned on here."
 	legend="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "Autoscroll is off - this is what would be covered."
+	warn="$MCA_MSG_RESULT"
+
+	# The per-row labels are resolved once, here. Looking them up inside the
+	# drawing loop is a fork per row per keypress, and that is enough to make
+	# the arrow keys feel like the screen is reloading.
+	local l_off l_cannot l_on l_steam l_flagfile l_launcher
+	mca_msg_into "$locale" "off";         l_off="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "cannot tell"; l_cannot="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "on";          l_on="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "Steam";       l_steam="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "flag file";   l_flagfile="$MCA_MSG_RESULT"
+	mca_msg_into "$locale" "launcher";    l_launcher="$MCA_MSG_RESULT"
+
+	local s_off="${MCA_C_DIM}${l_off}${MCA_C_RESET}"
+	local s_cannot="${MCA_C_DIM}${l_cannot}${MCA_C_RESET}"
+	local s_on="${MCA_C_GREEN}${l_on}${MCA_C_RESET}"
+	local s_steam="${s_on} ${MCA_C_DIM}(${l_steam})${MCA_C_RESET}"
+	local s_flags="${s_on} ${MCA_C_DIM}(${l_flagfile})${MCA_C_RESET}"
+	local s_desktop="${s_on} ${MCA_C_DIM}(${l_launcher})${MCA_C_RESET}"
 
 	local clearseq
 	clearseq="$(clear 2>/dev/null)" || clearseq=$'\033[H\033[2J'
@@ -409,11 +429,11 @@ mca_ui_apps() {
 		local marker selected="${MCA_C_BLUE}▸${MCA_C_RESET} " shown
 		for i in "${!labels[@]}"; do
 			case "${states[i]}" in
-				off)     shown="${MCA_C_DIM}$(mca_msg "off")${MCA_C_RESET}" ;;
-				unknown) shown="${MCA_C_DIM}$(mca_msg "cannot tell")${MCA_C_RESET}" ;;
-				steam)   shown="${MCA_C_GREEN}$(mca_msg "on")${MCA_C_RESET} ${MCA_C_DIM}($(mca_msg "Steam"))${MCA_C_RESET}" ;;
-				flags)   shown="${MCA_C_GREEN}$(mca_msg "on")${MCA_C_RESET} ${MCA_C_DIM}($(mca_msg "flag file"))${MCA_C_RESET}" ;;
-				*)       shown="${MCA_C_GREEN}$(mca_msg "on")${MCA_C_RESET} ${MCA_C_DIM}($(mca_msg "launcher"))${MCA_C_RESET}" ;;
+				off)     shown="$s_off" ;;
+				unknown) shown="$s_cannot" ;;
+				steam)   shown="$s_steam" ;;
+				flags)   shown="$s_flags" ;;
+				*)       shown="$s_desktop" ;;
 			esac
 			pad=$(( 34 - ${#labels[i]} ))
 			(( pad < 0 )) && pad=0
@@ -426,7 +446,7 @@ mca_ui_apps() {
 		# Without this the list reads as a list of what is switched on, which
 		# it is not while the whole thing is off.
 		if [[ $CFG_ENABLED != yes ]]; then
-			frame+="  ${MCA_C_YELLOW}$(mca_msg "Autoscroll is off - this is what would be covered.")${MCA_C_RESET}"$'\n'
+			frame+="  ${MCA_C_YELLOW}${warn}${MCA_C_RESET}"$'\n'
 		fi
 		frame+="  ${MCA_C_DIM}${legend}${MCA_C_RESET}"$'\n'
 		frame+="  ${MCA_C_DIM}${hint}${MCA_C_RESET}"$'\n'

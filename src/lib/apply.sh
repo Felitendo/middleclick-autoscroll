@@ -8,7 +8,6 @@
 # of the behaviour, it is the behaviour.
 
 MCA_CHANGES=0
-MCA_TOUCHED=()
 MCA_ROUTES=()
 
 # mca_route <kind> <id> <program>
@@ -63,7 +62,6 @@ mca_apply() {
 	local i id file prog kind route steam_done=0
 
 	MCA_CHANGES=0
-	MCA_TOUCHED=()
 	MCA_ROUTES=()
 	MCA_N_ON=0; MCA_N_OFF=0; MCA_N_UNKNOWN=0
 
@@ -117,7 +115,6 @@ mca_apply() {
 	fi
 
 	mca_state_write last_apply "$(date +%s)"
-	mca_state_write covered "${#MCA_TOUCHED[@]}"
 	return 0
 }
 
@@ -131,7 +128,6 @@ mca_revert() {
 		update-desktop-database "$MCA_APPDIR" 2>/dev/null || true
 	fi
 
-	mca_state_write covered 0
 	return 0
 }
 
