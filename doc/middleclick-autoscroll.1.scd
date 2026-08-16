@@ -2,7 +2,7 @@ middleclick-autoscroll(1)
 
 # NAME
 
-middleclick-autoscroll - middle-click autoscroll for Chromium-based applications
+middleclick-autoscroll - middle-click autoscroll in every application that supports it
 
 # SYNOPSIS
 

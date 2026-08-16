@@ -1,9 +1,13 @@
 # middleclick-autoscroll
 
 Middle-click autoscroll — hold the middle mouse button, move the pointer, the
-page scrolls — for every Chromium-based application on the system. Discord,
-Vesktop, Equibop, VS Code, Obsidian, Signal, Spotify, Steam, Chromium-based
-browsers, and whatever gets installed next week.
+page scrolls — in every application on the system that can do it, and in
+anything installed later.
+
+There is no list of supported applications to check against and none to keep up
+to date. Every launcher on the system is examined, the ones running on Chromium
+underneath are identified by what they ship rather than by their name, and each
+of them is handled.
 
 ```bash
 paru -S middleclick-autoscroll
