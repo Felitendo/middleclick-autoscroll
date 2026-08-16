@@ -110,6 +110,8 @@ mca_apply() {
 	[[ $CFG_AUTOSTART == yes ]] && mca_autostart_apply
 	[[ $CFG_SPOTIFY == yes ]] && mca_spotify_apply
 
+	mca_prune_orphans
+
 	if (( MCA_CHANGES )) && mca_have update-desktop-database; then
 		update-desktop-database "$MCA_APPDIR" 2>/dev/null || true
 	fi

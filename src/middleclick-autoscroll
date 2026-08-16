@@ -76,11 +76,11 @@ mca_do_disable() {
 }
 
 mca_do_apply() {
-	local changed=0 arg
+	local rebuild=0 arg
 
 	for arg in "$@"; do
 		case "$arg" in
-			--changed) changed=1 ;;
+			--rebuild) rebuild=1 ;;
 			--quiet)   MCA_QUIET=1 ;;
 		esac
 	done
@@ -95,17 +95,24 @@ mca_do_apply() {
 		return 1
 	fi
 
-	# A settings change can take an application out of scope as well as bring
-	# one in, and only a full undo can tell the difference, so that path starts
-	# from a clean slate. The watcher never does this: rewriting files that are
-	# already correct would make it trigger itself.
-	if (( changed )); then
+	# Start from a clean slate. Needed after a settings change, which can take
+	# an application out of scope as well as bring one in and where only a full
+	# undo can tell the difference, and it is what makes the repair a repair:
+	# whatever drifted is written again rather than left because it is "already
+	# applied".
+	#
+	# The watcher never does this. Rewriting files that are already correct
+	# would change their timestamps, and it is watching those directories.
+	if (( rebuild )); then
 		mca_revert
 	fi
 
 	mca_apply
 
-	if (( MCA_CHANGES )); then
+	if (( rebuild )); then
+		mca_ok "$(mca_msg "Applied again to %d applications." "$MCA_N_ON")"
+		mca_say "  $(mca_msg "Applications that are already running pick this up when they are restarted.")"
+	elif (( MCA_CHANGES )); then
 		mca_ok "$(mca_msg "Applied to %d applications." "$MCA_N_ON")"
 		mca_say "  $(mca_msg "Applications that are already running pick this up when they are restarted.")"
 	else
@@ -160,6 +167,7 @@ mca_do_help() {
 	  enable              $(mca_msg "Turn autoscroll on")
 	  disable             $(mca_msg "Turn it off and put everything back")
 	  apply               $(mca_msg "Apply to anything installed since the last run")
+	  apply --rebuild     $(mca_msg "Take everything back and apply it again")
 	  status              $(mca_msg "Show what is covered")
 	  list                $(mca_msg "List every application that was found")
 	  -h, --help          $(mca_msg "Show this help")

@@ -419,6 +419,40 @@ mca_spotify_apply() {
 }
 
 # ---------------------------------------------------------------------------
+# Leftovers
+# ---------------------------------------------------------------------------
+
+# mca_prune_orphans
+# Removes generated entries whose application is gone.
+#
+# Uninstalling something deletes its entry from /usr/share/applications, but the
+# copy shadowing it is in the user's home and pacman knows nothing about it. It
+# would sit in the menu forever, offering to start a program that is no longer
+# installed - and the watcher would not notice, because a plain apply only ever
+# looks at what is there now.
+mca_prune_orphans() {
+	local kind path source line
+	local -a lines=()
+
+	[[ -f $MCA_LEDGER ]] || return 0
+	mapfile -t lines < "$MCA_LEDGER"
+
+	for line in "${lines[@]}"; do
+		IFS=$'\t' read -r kind path source <<< "$line"
+		[[ $kind == shadow && -n $source ]] || continue
+		[[ -e $source ]] && continue
+
+		# Only ever remove something still recognisably ours.
+		if [[ -f $path ]] && grep -q "^$MCA_MARK_SHADOW=" "$path" 2>/dev/null; then
+			rm -f -- "$path"
+			MCA_CHANGES=$(( MCA_CHANGES + 1 ))
+		fi
+		mca_ledger_forget "$path"
+	done
+	return 0
+}
+
+# ---------------------------------------------------------------------------
 # Undo
 # ---------------------------------------------------------------------------
 

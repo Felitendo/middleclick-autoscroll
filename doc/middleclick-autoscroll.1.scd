@@ -36,9 +36,16 @@ is refused.
 *disable*
 	Turn it off and put every file that was changed back the way it was.
 
-*apply*
+*apply* [*--rebuild*]
 	Apply to anything that has appeared since the last run. This is what the
 	watcher calls; running it by hand is only needed when the watcher is off.
+
+	Entries left behind by an application that has since been uninstalled are
+	removed here too - the entry shadowing it lives in the user's home, where
+	the package manager that removed the application cannot see it.
+
+	With *--rebuild* everything is taken back first and written again from
+	scratch. That is the repair: it does not care what looks correct already.
 
 *status*
 	How many applications are covered, whether Steam is patched, and when the

@@ -495,7 +495,7 @@ mca_ui_menu() {
 		mca_ui_status
 		printf '\n'
 		printf '  [1] %s\n' "$(mca_msg "Turn autoscroll on or off")"
-		printf '  [2] %s\n' "$(mca_msg "Apply now")"
+		printf '  [2] %s\n' "$(mca_msg "Re-apply everything")"
 		printf '  [3] %s\n' "$(mca_msg "Applications")"
 		printf '  [4] %s\n' "$(mca_msg "Settings")"
 		printf '  [q] %s\n' "$(mca_msg "Quit")"
@@ -519,18 +519,24 @@ mca_ui_menu() {
 				fi
 				[[ -n $MCA_UI_NEEDS_ACK ]] && mca_pause
 				;;
+			# Not a plain apply: with the watcher running there is never
+			# anything left for one to do, and a menu entry that answers
+			# "already done" every time is not an action. This is the repair -
+			# everything is taken back and written again from scratch, which is
+			# what fixes an application that drifted, a flag file somebody
+			# edited, or Steam after it restored its own script.
 			2)
-				mca_ui_cooked mca_do_apply
+				mca_ui_cooked mca_do_apply --rebuild
 				mca_pause
 				;;
 			3)
 				if mca_ui_apps; then
-					[[ $CFG_ENABLED == yes ]] && mca_ui_cooked mca_do_apply --changed
+					[[ $CFG_ENABLED == yes ]] && mca_ui_cooked mca_do_apply --rebuild
 				fi
 				;;
 			4)
 				if mca_ui_settings; then
-					[[ $CFG_ENABLED == yes ]] && mca_ui_cooked mca_do_apply --changed
+					[[ $CFG_ENABLED == yes ]] && mca_ui_cooked mca_do_apply --rebuild
 				fi
 				;;
 			q|Q) mca_ui_term_restore; trap - EXIT INT TERM; return 0 ;;

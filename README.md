@@ -59,7 +59,7 @@ all of them, in a way that survives the next package upgrade, is not:
   Applications pick this up the next time they are started.
 
   [1] Turn autoscroll on or off
-  [2] Apply now
+  [2] Re-apply everything
   [3] Applications
   [4] Settings
   [q] Quit
@@ -170,6 +170,7 @@ Run this before uninstalling the package.
 | `… enable` | turn it on, apply, start watching |
 | `… disable` | turn it off and put everything back |
 | `… apply` | apply to anything new (this is what the watcher calls) |
+| `… apply --rebuild` | take everything back and apply it again, to repair a mess |
 | `… status` | what is covered |
 | `… list` | every application that was found and how it is handled |
 

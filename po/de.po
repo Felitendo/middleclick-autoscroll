@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: middleclick-autoscroll 1.0.2\n"
+"Project-Id-Version: middleclick-autoscroll 1.0.3\n"
 "Report-Msgid-Bugs-To: https://github.com/Felitendo/middleclick-autoscroll/issues\n"
 "POT-Creation-Date: 2026-08-16 00:00+0200\n"
 "PO-Revision-Date: 2026-08-16 00:00+0200\n"
@@ -77,8 +77,8 @@ msgstr "Anwendungen übernehmen das beim nächsten Start."
 msgid "Turn autoscroll on or off"
 msgstr "Autoscroll ein- oder ausschalten"
 
-msgid "Apply now"
-msgstr "Jetzt anwenden"
+msgid "Re-apply everything"
+msgstr "Alles neu anwenden"
 
 msgid "Applications"
 msgstr "Anwendungen"
@@ -164,6 +164,9 @@ msgstr "Autoscroll ist aus, alle Änderungen wurden zurückgenommen."
 msgid "Autoscroll is off. Turn it on first."
 msgstr "Autoscroll ist aus. Erst einschalten."
 
+msgid "Applied again to %d applications."
+msgstr "Erneut auf %d Anwendungen angewendet."
+
 msgid "Applied to %d applications."
 msgstr "Auf %d Anwendungen angewendet."
 
@@ -189,6 +192,9 @@ msgstr "Ausschalten und alles zurücknehmen"
 
 msgid "Apply to anything installed since the last run"
 msgstr "Auf alles anwenden, was seit dem letzten Lauf dazugekommen ist"
+
+msgid "Take everything back and apply it again"
+msgstr "Alles zurücknehmen und neu anwenden"
 
 msgid "Show what is covered"
 msgstr "Anzeigen, was abgedeckt ist"
