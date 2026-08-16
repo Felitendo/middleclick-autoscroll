@@ -1,0 +1,3 @@
+# build artifacts
+po/*.mo
+doc/*.1

@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+#
+# middleclick-autoscroll - middle-click autoscroll for Chromium-based
+# applications on Linux
+#
+# Blink has had Windows-style autoscroll for years, behind a runtime flag that
+# is not turned on for Linux because middle click is taken by primary-selection
+# paste there. Turning it on is a matter of one command line argument - the
+# work is finding every application that needs it, putting the argument
+# somewhere it survives an update, and doing the same for the two programs that
+# do not take arguments at all.
+#
+# Copyright (C) 2026 Felitendo
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+set -uo pipefail
+
+MCA_LIBDIR="${MCA_LIBDIR:-@LIBDIR@}"
+
+for _mod in common config detect patch steam apply menu; do
+	# shellcheck source=/dev/null
+	if ! source "$MCA_LIBDIR/$_mod.sh"; then
+		printf 'middleclick-autoscroll: cannot load %s/%s.sh\n' "$MCA_LIBDIR" "$_mod" >&2
+		exit 14
+	fi
+done
+unset _mod
+
+# Nothing here writes outside $HOME, so running it as root would patch root's
+# own applications and leave the actual user without any.
+if [[ $EUID -eq 0 && -z ${MCA_ALLOW_ROOT:-} ]]; then
+	printf 'middleclick-autoscroll: run this as your own user, not as root.\n' >&2
+	exit 2
+fi
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+
+mca_do_enable() {
+	mca_config_set Enabled yes || {
+		mca_bad "$(mca_msg "Could not save the setting.")"
+		return 1
+	}
+	mca_config_load
+
+	mca_apply
+
+	if [[ $CFG_WATCH == yes ]]; then
+		if mca_watch_available; then
+			mca_watch_enable || mca_note "$(mca_msg "Could not start the watcher for newly installed applications.")"
+		else
+			mca_note "$(mca_msg "No systemd user session - newly installed applications will not be picked up on their own.")"
+		fi
+	fi
+
+	mca_ok "$(mca_msg "Autoscroll is on for %d applications." "$MCA_N_ON")"
+
+	if [[ $CFG_STEAM == yes ]] && mca_steam_installed; then
+		mca_note "$(mca_msg "Steam's launcher now skips its file check, which is what keeps the change from being undone at every start.")"
+	fi
+
+	mca_note "$(mca_msg "Applications that are already running pick this up when they are restarted.")"
+}
+
+mca_do_disable() {
+	mca_config_set Enabled no || {
+		mca_bad "$(mca_msg "Could not save the setting.")"
+		return 1
+	}
+
+	mca_revert
+	mca_watch_disable
+
+	mca_ok "$(mca_msg "Autoscroll is off and everything that was changed has been put back.")"
+}
+
+mca_do_apply() {
+	local changed=0 arg
+
+	for arg in "$@"; do
+		case "$arg" in
+			--changed) changed=1 ;;
+			--quiet)   MCA_QUIET=1 ;;
+		esac
+	done
+
+	mca_config_load
+
+	if [[ $CFG_ENABLED != yes ]]; then
+		# Called by the watcher while switched off: there is nothing to do, and
+		# nothing to complain about either.
+		[[ -n $MCA_QUIET ]] && return 0
+		mca_note "$(mca_msg "Autoscroll is off. Turn it on first.")"
+		return 1
+	fi
+
+	# A settings change can take an application out of scope as well as bring
+	# one in, and only a full undo can tell the difference, so that path starts
+	# from a clean slate. The watcher never does this: rewriting files that are
+	# already correct would make it trigger itself.
+	if (( changed )); then
+		mca_revert
+	fi
+
+	mca_apply
+
+	if (( MCA_CHANGES )); then
+		mca_ok "$(mca_msg "Applied to %d applications." "$MCA_N_ON")"
+		mca_say "  $(mca_msg "Applications that are already running pick this up when they are restarted.")"
+	else
+		mca_ok "$(mca_msg "Already applied to %d applications." "$MCA_N_ON")"
+	fi
+
+	if [[ $CFG_WATCH == yes ]] && mca_watch_available && ! mca_watch_enabled; then
+		mca_watch_enable || true
+	elif [[ $CFG_WATCH != yes ]] && mca_watch_enabled; then
+		mca_watch_disable
+	fi
+}
+
+mca_do_status() {
+	mca_config_load
+	mca_head "  $MCA_PRETTY"
+	mca_ui_status
+	printf '\n'
+}
+
+mca_do_list() {
+	local i route label pad
+
+	mca_config_load
+	mca_scan_once
+	mca_count_routes
+
+	if (( ${#MCA_IDS[@]} == 0 )); then
+		mca_note "$(mca_msg "No Chromium-based applications found.")"
+		return 0
+	fi
+
+	mca_head "  $(mca_msg "Applications")"
+
+	for i in "${!MCA_IDS[@]}"; do
+		route="${MCA_ROUTES[i]}"
+		label="${MCA_NAMES[i]}"
+		pad=$(( 34 - ${#label} ))
+		(( pad < 0 )) && pad=0
+		printf '  %s%*s %s\n' "$label" "$pad" '' "$(mca_route_label "$route")"
+	done
+	printf '\n'
+}
+
+mca_do_help() {
+	cat <<- EOF
+	$MCA_PRETTY $MCA_VERSION
+
+	$(mca_msg "Usage: middleclick-autoscroll [command]")
+
+	$(mca_msg "Commands:")
+	  enable              $(mca_msg "Turn autoscroll on")
+	  disable             $(mca_msg "Turn it off and put everything back")
+	  apply               $(mca_msg "Apply to anything installed since the last run")
+	  status              $(mca_msg "Show what is covered")
+	  list                $(mca_msg "List every application that was found")
+	  -h, --help          $(mca_msg "Show this help")
+	  -V, --version       $(mca_msg "Show the version")
+
+	$(mca_msg "Without a command an interactive menu is shown.")
+	EOF
+}
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+
+main() {
+	local cmd="${1:-}"
+	[[ $# -gt 0 ]] && shift
+
+	case "$cmd" in
+		enable)  mca_do_enable "$@" ;;
+		disable) mca_do_disable "$@" ;;
+		apply|refresh) mca_do_apply "$@" ;;
+		status)  mca_do_status "$@" ;;
+		list)    mca_do_list "$@" ;;
+
+		-h|--help|help) mca_do_help ;;
+		-V|--version)   printf '%s %s\n' "$MCA_NAME" "$MCA_VERSION" ;;
+
+		'') mca_ui_menu ;;
+		*)
+			mca_bad "$(mca_msg "Unknown command: %s" "$cmd")"
+			printf '\n'
+			mca_do_help
+			exit 1
+			;;
+	esac
+}
+
+main "$@"

@@ -1,0 +1,25 @@
+[Unit]
+Description=Watch for newly installed Chromium-based applications
+Documentation=man:middleclick-autoscroll(1)
+
+[Path]
+# Every way an application can turn up: a package, a Flatpak, something
+# installed by hand. Watching where the launchers land means there is no hook
+# to write per package manager - pacman, flatpak and an AppImage manager all
+# end up here.
+PathModified=/usr/share/applications
+PathModified=/usr/local/share/applications
+PathModified=%h/.local/share/applications
+PathModified=%h/.config/autostart
+PathModified=/var/lib/flatpak/exports/share/applications
+PathModified=%h/.local/share/flatpak/exports/share/applications
+
+# Steam replaces the script that starts its interface on every client update,
+# which takes the patch with it.
+PathChanged=%h/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
+PathChanged=%h/.var/app/com.valvesoftware.Steam/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
+
+Unit=middleclick-autoscroll.service
+
+[Install]
+WantedBy=default.target

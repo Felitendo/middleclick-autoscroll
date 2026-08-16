@@ -1,0 +1,226 @@
+# Translation template for middleclick-autoscroll.
+# Copyright (C) 2026 Felitendo
+# This file is distributed under the same license as middleclick-autoscroll.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: middleclick-autoscroll 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/Felitendo/middleclick-autoscroll/issues\n"
+"POT-Creation-Date: 2026-08-16 00:00+0200\n"
+"PO-Revision-Date: 2026-08-16 00:00+0200\n"
+"Last-Translator: Felitendo\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Status labels
+msgid "ON"
+msgstr "AN"
+
+msgid "OFF"
+msgstr "AUS"
+
+msgid "on"
+msgstr "an"
+
+msgid "off"
+msgstr "aus"
+
+msgid "(none)"
+msgstr "(keine)"
+
+msgid "flag file"
+msgstr "Flag-Datei"
+
+msgid "launcher"
+msgstr "Startereintrag"
+
+msgid "cannot tell"
+msgstr "nicht erkennbar"
+
+msgid "not patched yet"
+msgstr "noch nicht gepatcht"
+
+
+#. Status block
+msgid "Autoscroll"
+msgstr "Autoscroll"
+
+msgid "Applications covered"
+msgstr "Abgedeckte Anwendungen"
+
+msgid "%d of %d"
+msgstr "%d von %d"
+
+msgid "Not identified"
+msgstr "Nicht erkannt"
+
+msgid "%d - see the applications list"
+msgstr "%d – siehe Anwendungsliste"
+
+msgid "Steam"
+msgstr "Steam"
+
+msgid "New applications"
+msgstr "Neue Anwendungen"
+
+msgid "Last applied"
+msgstr "Zuletzt angewendet"
+
+msgid "Applications pick this up the next time they are started."
+msgstr "Anwendungen übernehmen das beim nächsten Start."
+
+
+#. Menu
+msgid "Turn autoscroll on or off"
+msgstr "Autoscroll ein- oder ausschalten"
+
+msgid "Apply now"
+msgstr "Jetzt anwenden"
+
+msgid "Applications"
+msgstr "Anwendungen"
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "Press any key to continue..."
+msgstr "Beliebige Taste drücken …"
+
+
+#. Settings
+msgid "Electron and CEF applications"
+msgstr "Electron- und CEF-Anwendungen"
+
+msgid "Chromium-based browsers"
+msgstr "Chromium-basierte Browser"
+
+msgid "Flatpak applications"
+msgstr "Flatpak-Anwendungen"
+
+msgid "Programs that start themselves at login"
+msgstr "Programme, die sich beim Anmelden selbst starten"
+
+msgid "Spotify"
+msgstr "Spotify"
+
+msgid "Apply to newly installed applications"
+msgstr "Auf neu installierte Anwendungen anwenden"
+
+msgid "Additional Chromium arguments"
+msgstr "Zusätzliche Chromium-Argumente"
+
+msgid "Up/Down select - Space or Right changes - q goes back"
+msgstr "Hoch/Runter wählt – Leertaste oder Rechts ändert – q geht zurück"
+
+msgid "Arguments separated by spaces, empty for none:"
+msgstr "Argumente mit Leerzeichen getrennt, leer für keine:"
+
+msgid "Could not save the setting."
+msgstr "Einstellung konnte nicht gespeichert werden."
+
+
+#. Applications screen
+msgid "Looking at the installed applications..."
+msgstr "Installierte Anwendungen werden durchgesehen …"
+
+msgid "No Chromium-based applications found."
+msgstr "Keine Chromium-basierten Anwendungen gefunden."
+
+msgid "Anything not identified is left alone until it is turned on here."
+msgstr "Nicht erkannte Anwendungen bleiben unangetastet, bis sie hier eingeschaltet werden."
+
+msgid "Autoscroll is off - this is what would be covered."
+msgstr "Autoscroll ist aus – das hier wäre abgedeckt."
+
+msgid "Up/Down select - Space turns one on or off - q goes back"
+msgstr "Hoch/Runter wählt – Leertaste schaltet einzeln ein oder aus – q geht zurück"
+
+
+#. Results
+msgid "Autoscroll is on for %d applications."
+msgstr "Autoscroll ist für %d Anwendungen an."
+
+msgid "Applications that are already running pick this up when they are restarted."
+msgstr "Bereits laufende Anwendungen übernehmen das nach einem Neustart."
+
+msgid "Steam's launcher now skips its file check, which is what keeps the change from being undone at every start."
+msgstr "Steams Startereintrag überspringt jetzt die Dateiprüfung – nur so bleibt die Änderung bei jedem Start erhalten."
+
+msgid "Could not start the watcher for newly installed applications."
+msgstr "Die Überwachung neu installierter Anwendungen konnte nicht gestartet werden."
+
+msgid "No systemd user session - newly installed applications will not be picked up on their own."
+msgstr "Keine systemd-Benutzersitzung – neu installierte Anwendungen werden nicht von selbst erfasst."
+
+msgid "Autoscroll is off and everything that was changed has been put back."
+msgstr "Autoscroll ist aus, alle Änderungen wurden zurückgenommen."
+
+msgid "Autoscroll is off. Turn it on first."
+msgstr "Autoscroll ist aus. Erst einschalten."
+
+msgid "Applied to %d applications."
+msgstr "Auf %d Anwendungen angewendet."
+
+msgid "Already applied to %d applications."
+msgstr "Bereits auf %d Anwendungen angewendet."
+
+msgid "Steam starts its interface in a way this version does not recognise; leaving it alone."
+msgstr "Steam startet seine Oberfläche auf eine Art, die diese Version nicht kennt; Steam bleibt unangetastet."
+
+
+#. Help
+msgid "Usage: middleclick-autoscroll [command]"
+msgstr "Aufruf: middleclick-autoscroll [Befehl]"
+
+msgid "Commands:"
+msgstr "Befehle:"
+
+msgid "Turn autoscroll on"
+msgstr "Autoscroll einschalten"
+
+msgid "Turn it off and put everything back"
+msgstr "Ausschalten und alles zurücknehmen"
+
+msgid "Apply to anything installed since the last run"
+msgstr "Auf alles anwenden, was seit dem letzten Lauf dazugekommen ist"
+
+msgid "Show what is covered"
+msgstr "Anzeigen, was abgedeckt ist"
+
+msgid "List every application that was found"
+msgstr "Alle gefundenen Anwendungen auflisten"
+
+msgid "Show this help"
+msgstr "Diese Hilfe anzeigen"
+
+msgid "Show the version"
+msgstr "Version anzeigen"
+
+msgid "Without a command an interactive menu is shown."
+msgstr "Ohne Befehl wird ein interaktives Menü angezeigt."
+
+msgid "Unknown command: %s"
+msgstr "Unbekannter Befehl: %s"
+
+
+#. Time
+msgid "never"
+msgstr "nie"
+
+msgid "just now"
+msgstr "gerade eben"
+
+msgid "%d minutes ago"
+msgstr "vor %d Minuten"
+
+msgid "%d hours ago"
+msgstr "vor %d Stunden"
+
+msgid "%d days ago"
+msgstr "vor %d Tagen"

@@ -1,0 +1,16 @@
+[Unit]
+Description=Apply middle-click autoscroll to Chromium-based applications
+Documentation=man:middleclick-autoscroll(1)
+
+[Service]
+Type=oneshot
+ExecStart=@BINDIR@/middleclick-autoscroll apply --quiet
+# Scanning binaries for their engine is the slow part, and it is cached; a run
+# that takes longer than this has found something pathological and should not
+# be left running at every login.
+TimeoutStartSec=180
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

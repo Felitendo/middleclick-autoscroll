@@ -1,0 +1,226 @@
+# Translation template for middleclick-autoscroll.
+# Copyright (C) 2026 Felitendo
+# This file is distributed under the same license as middleclick-autoscroll.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: middleclick-autoscroll 1.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/Felitendo/middleclick-autoscroll/issues\n"
+"POT-Creation-Date: 2026-08-16 00:00+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Status labels
+msgid "ON"
+msgstr ""
+
+msgid "OFF"
+msgstr ""
+
+msgid "on"
+msgstr ""
+
+msgid "off"
+msgstr ""
+
+msgid "(none)"
+msgstr ""
+
+msgid "flag file"
+msgstr ""
+
+msgid "launcher"
+msgstr ""
+
+msgid "cannot tell"
+msgstr ""
+
+msgid "not patched yet"
+msgstr ""
+
+
+#. Status block
+msgid "Autoscroll"
+msgstr ""
+
+msgid "Applications covered"
+msgstr ""
+
+msgid "%d of %d"
+msgstr ""
+
+msgid "Not identified"
+msgstr ""
+
+msgid "%d - see the applications list"
+msgstr ""
+
+msgid "Steam"
+msgstr ""
+
+msgid "New applications"
+msgstr ""
+
+msgid "Last applied"
+msgstr ""
+
+msgid "Applications pick this up the next time they are started."
+msgstr ""
+
+
+#. Menu
+msgid "Turn autoscroll on or off"
+msgstr ""
+
+msgid "Apply now"
+msgstr ""
+
+msgid "Applications"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Quit"
+msgstr ""
+
+msgid "Press any key to continue..."
+msgstr ""
+
+
+#. Settings
+msgid "Electron and CEF applications"
+msgstr ""
+
+msgid "Chromium-based browsers"
+msgstr ""
+
+msgid "Flatpak applications"
+msgstr ""
+
+msgid "Programs that start themselves at login"
+msgstr ""
+
+msgid "Spotify"
+msgstr ""
+
+msgid "Apply to newly installed applications"
+msgstr ""
+
+msgid "Additional Chromium arguments"
+msgstr ""
+
+msgid "Up/Down select - Space or Right changes - q goes back"
+msgstr ""
+
+msgid "Arguments separated by spaces, empty for none:"
+msgstr ""
+
+msgid "Could not save the setting."
+msgstr ""
+
+
+#. Applications screen
+msgid "Looking at the installed applications..."
+msgstr ""
+
+msgid "No Chromium-based applications found."
+msgstr ""
+
+msgid "Anything not identified is left alone until it is turned on here."
+msgstr ""
+
+msgid "Autoscroll is off - this is what would be covered."
+msgstr ""
+
+msgid "Up/Down select - Space turns one on or off - q goes back"
+msgstr ""
+
+
+#. Results
+msgid "Autoscroll is on for %d applications."
+msgstr ""
+
+msgid "Applications that are already running pick this up when they are restarted."
+msgstr ""
+
+msgid "Steam's launcher now skips its file check, which is what keeps the change from being undone at every start."
+msgstr ""
+
+msgid "Could not start the watcher for newly installed applications."
+msgstr ""
+
+msgid "No systemd user session - newly installed applications will not be picked up on their own."
+msgstr ""
+
+msgid "Autoscroll is off and everything that was changed has been put back."
+msgstr ""
+
+msgid "Autoscroll is off. Turn it on first."
+msgstr ""
+
+msgid "Applied to %d applications."
+msgstr ""
+
+msgid "Already applied to %d applications."
+msgstr ""
+
+msgid "Steam starts its interface in a way this version does not recognise; leaving it alone."
+msgstr ""
+
+
+#. Help
+msgid "Usage: middleclick-autoscroll [command]"
+msgstr ""
+
+msgid "Commands:"
+msgstr ""
+
+msgid "Turn autoscroll on"
+msgstr ""
+
+msgid "Turn it off and put everything back"
+msgstr ""
+
+msgid "Apply to anything installed since the last run"
+msgstr ""
+
+msgid "Show what is covered"
+msgstr ""
+
+msgid "List every application that was found"
+msgstr ""
+
+msgid "Show this help"
+msgstr ""
+
+msgid "Show the version"
+msgstr ""
+
+msgid "Without a command an interactive menu is shown."
+msgstr ""
+
+msgid "Unknown command: %s"
+msgstr ""
+
+
+#. Time
+msgid "never"
+msgstr ""
+
+msgid "just now"
+msgstr ""
+
+msgid "%d minutes ago"
+msgstr ""
+
+msgid "%d hours ago"
+msgstr ""
+
+msgid "%d days ago"
+msgstr ""
