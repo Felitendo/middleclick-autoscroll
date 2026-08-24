@@ -224,9 +224,18 @@ jobs:
           name: pages
           path: pages
 
+      # A real run signs the package and the repository metadata with the one
+      # key from the secret. A dry run has no secret, so each job made a key of
+      # its own and both public halves are needed to check both signatures.
+      - uses: actions/download-artifact@v8
+        with:
+          name: rpm
+          path: signer
+
       - name: Install from the repository that was just built
         run: |
           rpm --import pages/KEY.gpg
+          rpm --import signer/rpm-signer.asc
           cat > /etc/yum.repos.d/middleclick-autoscroll.repo <<EOF
           [middleclick-autoscroll]
           name=middleclick-autoscroll
