@@ -18,7 +18,9 @@ on the command line.
 
 *middleclick-autoscroll* finds every Chromium-based application on the system
 and puts that argument somewhere the application will actually read it, then
-keeps doing so for anything installed later.
+keeps doing so for anything installed later. It works on any distribution:
+which of the routes below an application takes is read off its launcher, not
+assumed from where the launcher came from.
 
 Run without a command it shows an interactive menu. Everything it can be told
 is reachable from there; the configuration file behind it does not need to be
@@ -66,7 +68,7 @@ is refused.
 Two ways, chosen per application.
 
 *Flag file*
-	Arch's Electron and Chromium wrappers read extra arguments from
+	Where the launcher reads extra arguments from
 	_$XDG_CONFIG_HOME/<name>-flags.conf_. This is the preferred route: it is
 	the supported way to pass arguments, it survives package upgrades, and it
 	applies to a launch from a terminal as much as one from the menu. An
@@ -74,12 +76,22 @@ Two ways, chosen per application.
 	rather than duplicated - Chromium keeps only the last occurrence of that
 	option, so a second one would switch the first one off.
 
+	Arch's Electron and Chromium packages all wrap their binaries this way, and
+	so do a number of individual vendors' launchers elsewhere. Whether a given
+	launcher does is read off the launcher itself, never assumed from the
+	distribution: only one that really names such a file takes this route.
+
 *Desktop entry*
 	For applications that ship their own binary with no wrapper, and for
-	Flatpaks, a copy of the desktop entry with the argument appended is written
-	to _~/.local/share/applications_, where it shadows the system one. Entries
-	that already live there - AppImages, web app shortcuts - are edited in
-	place, with the original kept.
+	everything inside a Flatpak or a snap, a copy of the desktop entry with the
+	argument appended is written to _~/.local/share/applications_, where it
+	shadows the system one. Entries that already live there - AppImages, web
+	app shortcuts - are edited in place, with the original kept.
+
+	This is the route everything takes on the distributions whose Chromium
+	wrappers keep their equivalent file under _/etc_, where it is the system's
+	to write and not the user's: Debian, Ubuntu, Fedora and openSUSE among
+	them.
 
 	A generated entry is marked *X-MCA-Generated* and an entry edited in place
 	*X-MCA-Patched*. The two are never confused: the first is deleted when
@@ -97,6 +109,11 @@ line for its web helper itself. The only way in is the script that starts the
 helper, inside Steam's own installation:
 
 	~/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
+
+Where that installation is depends on how Steam was installed:
+_~/.local/share/Steam_ for Valve's own package and Arch's,
+_~/.steam/debian-installation_ for Debian's, and the private tree of the
+sandbox for the Flatpak and the snap. All of them are looked at.
 
 Steam compares the installed files against its manifest at every start - by
 size, not by content - and restores whatever differs, so its launcher entry
@@ -125,8 +142,8 @@ anyway.
 The official client is CEF rather than Electron. Installed through
 *spotify-launcher*, it is started by a program that builds its own command line
 and has a configuration file with a slot for extra arguments; that slot is
-where the flag goes. Installed as a plain package, it is an ordinary desktop
-entry and needs nothing special.
+where the flag goes. Installed as a plain package, a Flatpak or a snap, it is
+an ordinary desktop entry and needs nothing special.
 
 # WHAT CANNOT BE DETECTED
 
@@ -155,9 +172,15 @@ _~/.cache/middleclick-autoscroll/detect_
 *NO_COLOR*
 	Disables colour.
 
+# REQUIREMENTS
+
+Bash 4.2 or newer and GNU coreutils. The watcher needs a systemd user session;
+without one everything else works and applications installed later are picked
+up at the next *apply* rather than on their own.
+
 # SEE ALSO
 
-*systemctl*(1), *flatpak*(1)
+*systemctl*(1), *flatpak*(1), *snap*(8)
 
 # AUTHORS
 

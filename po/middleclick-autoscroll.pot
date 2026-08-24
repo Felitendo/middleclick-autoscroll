@@ -106,6 +106,9 @@ msgstr ""
 msgid "Flatpak applications"
 msgstr ""
 
+msgid "Snap applications"
+msgstr ""
+
 msgid "Programs that start themselves at login"
 msgstr ""
 

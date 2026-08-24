@@ -30,6 +30,11 @@ MCA_STEAM_LAUNCH_FLAG='-noverifyfiles'
 
 # Every place a Steam installation is known to live, resolved and de-duplicated
 # because ~/.steam/steam is normally a symlink into ~/.local/share.
+#
+# Which of these is the real one depends on how Steam was installed: Valve's
+# own package and the Arch one use ~/.local/share/Steam, Debian's puts it in
+# ~/.steam/debian-installation, and the Flatpak and the snap each keep it
+# inside the private tree their sandbox gives them.
 mca_steam_roots() {
 	local candidates=(
 		"$MCA_XDG_DATA/Steam"
@@ -37,6 +42,8 @@ mca_steam_roots() {
 		"$HOME/.steam/root"
 		"$HOME/.steam/debian-installation"
 		"$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam"
+		"$HOME/.var/app/com.valvesoftware.Steam/data/Steam"
+		"$HOME/snap/steam/common/.local/share/Steam"
 	)
 	local dir real
 	local -A seen=()
@@ -79,7 +86,8 @@ mca_steam_running() {
 	local f pid
 	for f in \
 		"$HOME/.steam/steam.pid" \
-		"$HOME/.var/app/com.valvesoftware.Steam/.steam/steam.pid"
+		"$HOME/.var/app/com.valvesoftware.Steam/.steam/steam.pid" \
+		"$HOME/snap/steam/common/.steam/steam.pid"
 	do
 		[[ -r $f ]] || continue
 		pid="$(< "$f")"

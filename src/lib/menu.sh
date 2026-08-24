@@ -215,6 +215,7 @@ MCA_SETTINGS=(
 	"PatchApps|bool|yes|Electron and CEF applications"
 	"PatchBrowsers|bool|yes|Chromium-based browsers"
 	"PatchFlatpak|bool|yes|Flatpak applications"
+	"PatchSnap|bool|yes|Snap applications"
 	"PatchAutostart|bool|yes|Programs that start themselves at login"
 	"PatchSteam|bool|yes|Steam"
 	"PatchSpotify|bool|yes|Spotify"

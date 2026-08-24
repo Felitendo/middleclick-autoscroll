@@ -17,7 +17,20 @@ DATADIR      ?= $(PREFIX)/share
 LIBDIR       ?= $(DATADIR)/middleclick-autoscroll/lib
 LOCALEDIR    ?= $(DATADIR)/locale
 MANDIR       ?= $(DATADIR)/man
+
+# Where systemd looks for user units. For a normal install into /usr this is
+# asked of systemd itself, because the answer is not the same everywhere - a
+# distribution that still keeps /lib separate from /usr/lib says so here - and
+# only guessed at when there is no systemd installed to ask.
+#
+# A build with a prefix of its own keeps the units under that prefix instead.
+# systemd searches $(PREFIX)/lib/systemd/user as well, and a file outside the
+# prefix it was asked for is not this build's to place.
+ifeq ($(PREFIX),/usr)
+USERUNITDIR  ?= $(shell pkg-config --variable=systemduserunitdir systemd 2>/dev/null || echo /usr/lib/systemd/user)
+else
 USERUNITDIR  ?= $(PREFIX)/lib/systemd/user
+endif
 
 LINGUAS      := de
 MOFILES      := $(patsubst %,po/%.mo,$(LINGUAS))

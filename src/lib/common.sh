@@ -34,7 +34,7 @@ MCA_CACHEDIR="${MCA_CACHEDIR:-${MCA_XDG_CACHE}/${MCA_NAME}}"
 
 # Where generated desktop entries go. A file here shadows the one with the same
 # name in /usr/share/applications, which is how an application gets extra
-# command line arguments without touching anything pacman owns.
+# command line arguments without touching a file the package manager owns.
 MCA_APPDIR="${MCA_XDG_DATA}/applications"
 
 # Copies of every file that is edited in place rather than shadowed.
@@ -60,8 +60,15 @@ mca_ui_locale() {
 		[[ -z $l ]] && l="${LANG:-}"
 	fi
 
-	if [[ -z $l && -r /etc/locale.conf ]]; then
-		l="$(sed -n 's/^LANG=//p' /etc/locale.conf | tr -d '"' | head -n1)"
+	# systemd writes /etc/locale.conf and most distributions use it; Debian and
+	# Ubuntu keep the same LANG= line in /etc/default/locale instead.
+	if [[ -z $l ]]; then
+		local f
+		for f in /etc/locale.conf /etc/default/locale; do
+			[[ -r $f ]] || continue
+			l="$(sed -n 's/^LANG=//p' "$f" | tr -d '"' | head -n1)"
+			[[ -n $l ]] && break
+		done
 	fi
 
 	printf '%s\n' "${l:-C}"

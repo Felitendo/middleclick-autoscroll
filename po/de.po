@@ -106,6 +106,9 @@ msgstr "Chromium-basierte Browser"
 msgid "Flatpak applications"
 msgstr "Flatpak-Anwendungen"
 
+msgid "Snap applications"
+msgstr "Snap-Anwendungen"
+
 msgid "Programs that start themselves at login"
 msgstr "Programme, die sich beim Anmelden selbst starten"
 

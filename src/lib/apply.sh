@@ -10,7 +10,7 @@
 MCA_CHANGES=0
 MCA_ROUTES=()
 
-# mca_route <kind> <id> <program>
+# mca_route <kind> <id> <program> [packaging]
 # What happens to one application, left in MCA_ROUTE:
 #   flags    - the launcher reads a flag file; write it there
 #   desktop  - no flag file; shadow or edit the desktop entry
@@ -24,7 +24,7 @@ MCA_ROUTES=()
 MCA_ROUTE=''
 
 mca_route() {
-	local kind="$1" id="$2" prog="$3"
+	local kind="$1" id="$2" prog="$3" packaging="${4:-native}"
 
 	if [[ $kind == steam ]]; then
 		if mca_config_list_has Skip "$id" || [[ $CFG_STEAM != yes ]]; then
@@ -35,14 +35,14 @@ mca_route() {
 		return
 	fi
 
-	if ! mca_kind_wanted "$kind" "$id"; then
+	if ! mca_kind_wanted "$kind" "$id" "$packaging"; then
 		[[ $kind == unknown ]] && MCA_ROUTE=unknown || MCA_ROUTE=off
 		return
 	fi
 
-	# A Flatpak has its own copy of everything and none of the host's wrappers,
-	# so the desktop entry is the only way in.
-	if [[ $kind == flatpak ]]; then
+	# A Flatpak or a snap carries its own copy of everything and sees none of
+	# the host's wrappers, so the desktop entry is the only way in.
+	if [[ $packaging != native ]]; then
 		MCA_ROUTE=desktop
 		return
 	fi
@@ -59,7 +59,7 @@ mca_route() {
 # as it likes to be - it writes only what differs, which is what keeps the
 # watcher from chasing its own changes.
 mca_apply() {
-	local i id file prog kind route steam_done=0
+	local i id file prog kind packaging route steam_done=0
 
 	MCA_CHANGES=0
 	MCA_ROUTES=()
@@ -73,8 +73,9 @@ mca_apply() {
 		file="${MCA_FILES[i]}"
 		prog="${MCA_PROGS[i]}"
 		kind="${MCA_KINDS[i]}"
+		packaging="${MCA_PACKAGING[i]}"
 
-		mca_route "$kind" "$id" "$prog"
+		mca_route "$kind" "$id" "$prog" "$packaging"
 		route="$MCA_ROUTE"
 		MCA_ROUTES[i]="$route"
 
@@ -153,9 +154,9 @@ mca_revert() {
 # The watcher
 # ---------------------------------------------------------------------------
 # A systemd user path unit watching every directory a desktop entry can appear
-# in. That covers a package installed with pacman, a Flatpak, an AppImage
-# registered by hand and a Steam client update, without a hook per package
-# manager.
+# in. That covers a package from whatever the distribution's package manager
+# is, a Flatpak, a snap, an AppImage registered by hand and a Steam client
+# update, without a hook per package manager.
 
 MCA_UNIT_PATH="middleclick-autoscroll.path"
 MCA_UNIT_SERVICE="middleclick-autoscroll.service"
@@ -201,7 +202,8 @@ mca_count_routes() {
 	MCA_ROUTES=()
 
 	for i in "${!MCA_IDS[@]}"; do
-		mca_route "${MCA_KINDS[i]}" "${MCA_IDS[i]}" "${MCA_PROGS[i]}"
+		mca_route "${MCA_KINDS[i]}" "${MCA_IDS[i]}" "${MCA_PROGS[i]}" \
+			"${MCA_PACKAGING[i]}"
 		route="$MCA_ROUTE"
 		MCA_ROUTES[i]="$route"
 		case "$route" in

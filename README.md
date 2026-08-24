@@ -10,9 +10,13 @@ underneath are identified by what they ship rather than by their name, and each
 of them is handled.
 
 ```bash
-paru -S middleclick-autoscroll
+paru -S middleclick-autoscroll     # Arch and its derivatives
 middleclick-autoscroll enable
 ```
+
+There is no package for anything else yet, so elsewhere it is `make && sudo
+make install` from a checkout and then the same one command. See
+[Building from source](#building-from-source).
 
 That is the whole setup. Nothing else has to be configured, and no file has to
 be edited.
@@ -31,9 +35,10 @@ back on:
 Getting that argument into one application is a five-minute job. Getting it into
 all of them, in a way that survives the next package upgrade, is not:
 
-- Some applications read a flag file, some don't.
+- Some applications read a flag file, some don't - and which do depends on the
+  distribution as much as on the application.
 - Some ship their own copy of Electron, some use the system one.
-- Flatpaks see none of the host's configuration.
+- Flatpaks and snaps see none of the host's configuration.
 - An application that starts itself at login uses a different entry than the one
   in the menu, and Discord launched at login used to behave differently from
   Discord launched by hand.
@@ -83,7 +88,7 @@ on — with the space bar:
 ```
 
 **[4] Settings** has the categories — Electron and CEF applications, browsers,
-Flatpaks, autostart entries, Steam, Spotify, whether to watch for new
+Flatpaks, snaps, autostart entries, Steam, Spotify, whether to watch for new
 applications, and a field for extra Chromium arguments if you want any.
 
 There is a configuration file behind all of this. You are never asked to open
@@ -95,8 +100,12 @@ Two routes, picked per application.
 
 | | |
 |---|---|
-| **Flag file** | Arch's Electron and Chromium wrappers read extra arguments from `~/.config/<name>-flags.conf`. This is the good one: it is the supported way to pass arguments, it survives package upgrades untouched, and it applies to a launch from a terminal as much as one from the menu. |
-| **Desktop entry** | For applications that ship their own binary with no wrapper, and for Flatpaks, a copy of the entry with the argument appended goes into `~/.local/share/applications`, where it shadows the system one. |
+| **Flag file** | Where the launcher reads extra arguments from `~/.config/<name>-flags.conf`. This is the good one: it is the supported way to pass arguments, it survives package upgrades untouched, and it applies to a launch from a terminal as much as one from the menu. Arch's Electron and Chromium packages all work this way, and a number of individual vendors' launchers do everywhere else. |
+| **Desktop entry** | For applications that ship their own binary with no wrapper, and for everything inside a Flatpak or a snap, a copy of the entry with the argument appended goes into `~/.local/share/applications`, where it shadows the system one. |
+
+Which of the two an application ends up on is decided by reading its launcher,
+never by knowing which distribution this is. Nothing here has a list of
+distributions in it any more than it has a list of applications.
 
 Entries that already live in `~/.local/share/applications` — AppImages, web app
 shortcuts — are edited in place and the original is kept. So are the entries in
@@ -148,10 +157,15 @@ started once, at the start.
 ## Applications installed later
 
 A systemd user path unit watches every directory a launcher can appear in —
-`/usr/share/applications`, the Flatpak exports, `~/.local/share/applications`,
-`~/.config/autostart` — plus Steam's helper script. Anything new is handled
-within a second of being installed, whether it came from pacman, the AUR,
-Flatpak or an AppImage manager. There is no hook to install per package manager.
+`/usr/share/applications`, the Flatpak exports, snapd's export directory, the
+NixOS and Guix profiles, `~/.local/share/applications`, `~/.config/autostart` —
+plus Steam's helper script. Anything new is handled within a second of being
+installed, whether it came from pacman, apt, dnf, zypper, the AUR, Flatpak,
+snapd or an AppImage manager. There is no hook to install per package manager,
+which is the only reason one program can cover all of them.
+
+Without systemd nothing breaks; new applications are picked up the next time
+`middleclick-autoscroll apply` runs instead of on their own.
 
 ## What it will not guess
 
@@ -191,17 +205,50 @@ Run this before uninstalling the package.
 
 See `man middleclick-autoscroll` for the details.
 
+## Distributions
+
+Any of them. Nothing here is keyed to a distribution name — what differs is
+which of the two routes above an application ends up on, and that is read off
+its launcher.
+
+On Arch and its derivatives most Electron and Chromium packages ship a wrapper
+that reads a flag file, so most applications take that route. On Debian,
+Ubuntu, Fedora and openSUSE the equivalent file lives under `/etc` and belongs
+to the system rather than to you, so there is no flag file to write and those
+applications go through their launcher entry instead. Both work. The flag file
+is only the nicer of the two, because it applies to a launch from a terminal as
+well.
+
+Snaps are handled the way Flatpaks are: what a snap ships lives in its own
+mounted tree, `/snap/bin/<name>` is a shim into snapd and says nothing about
+what is behind it, and the launcher entry is the only way in. Each has a switch
+of its own in the settings.
+
+Steam is found wherever the installation actually is — `~/.local/share/Steam`
+for Valve's own package and Arch's, `~/.steam/debian-installation` for
+Debian's, and inside the private tree for the Flatpak and the snap.
+
 ## Requirements
 
-Arch or an Arch derivative (CachyOS, EndeavourOS, Manjaro), bash, systemd for
-the watcher. Nothing outside your home directory is ever written to, and running
-it as root is refused.
+Bash 4.2 or newer, GNU coreutils, and systemd for the watcher — that is all,
+and it is what a desktop Linux install already has. Nothing outside your home
+directory is ever written to, and running it as root is refused.
 
 ## Building from source
 
 ```bash
 make
 sudo make install
+```
+
+`make` needs `msgfmt` (gettext) for the translations and `scdoc` for the man
+page; both are optional and skipped with a note when missing. `make install`
+puts the systemd user units where systemd itself says they go, and honours the
+usual `PREFIX` and `DESTDIR`:
+
+```bash
+make PREFIX=/usr/local
+sudo make PREFIX=/usr/local install
 ```
 
 `make check` runs `bash -n` and, if installed, `shellcheck` over every script.

@@ -4,15 +4,25 @@
 #
 # There are two ways in, and the order matters:
 #
-#   1. A flag file. Arch's Electron and Chromium wrappers read extra arguments
-#      from $XDG_CONFIG_HOME/<name>-flags.conf. This is the good one - it is the
-#      supported way to pass arguments, it survives package upgrades untouched,
-#      and it applies however the program is started, including from a terminal.
+#   1. A flag file. Where the distribution wraps Electron and Chromium in a
+#      launcher script that reads extra arguments from
+#      $XDG_CONFIG_HOME/<name>-flags.conf - Arch and its derivatives do, and it
+#      is the convention their packages follow - this is the good one: it is
+#      the supported way to pass arguments, it survives package upgrades
+#      untouched, and it applies however the program is started, including from
+#      a terminal.
+#
+#      Nothing is assumed about which distribution this is. The launcher itself
+#      is read, and the route is taken only for a launcher that really does
+#      name such a file. Elsewhere - Debian, Ubuntu, Fedora, openSUSE, where
+#      the equivalent file lives under /etc and is the system's to write -
+#      there is no flag file to use and route 2 answers for everything.
 #
 #   2. A desktop entry. For applications that ship their own binary with no
-#      wrapper - most vendor packages, every Flatpak - there is nowhere else to
-#      put an argument, so a copy of the entry with the flag appended goes into
-#      ~/.local/share/applications, where it shadows the system one.
+#      wrapper, and for everything a Flatpak or a snap contains, there is
+#      nowhere else to put an argument, so a copy of the entry with the flag
+#      appended goes into ~/.local/share/applications, where it shadows the
+#      system one.
 #
 # Nothing outside $HOME is ever written to.
 

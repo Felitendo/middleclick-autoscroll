@@ -27,8 +27,22 @@ MCA_MARKERS=(
 MCA_SYSTEM_DIRS=(
 	/ /bin /lib /lib32 /lib64 /sbin /usr /usr/bin /usr/lib /usr/lib32
 	/usr/lib64 /usr/libexec /usr/sbin /usr/local /usr/local/bin
-	/usr/local/lib /opt
+	/usr/local/lib /usr/local/libexec /opt
 )
+
+# The same thing for the layouts that put a machine triplet in the path.
+# Debian and Ubuntu keep the shared libraries in /usr/lib/x86_64-linux-gnu
+# rather than /usr/lib, so that directory is every bit as shared as /usr/lib is
+# elsewhere and a marker sitting in it belongs to nobody in particular.
+MCA_SYSTEM_DIR_GLOBS=(
+	'/usr/lib/*-linux-gnu*' '/usr/lib32/*-linux-gnu*'
+	'/usr/lib64/*-linux-gnu*' '/usr/local/lib/*-linux-gnu*'
+)
+
+# Where snapd mounts the installed snaps. /snap is the usual place and the one
+# the shims point into; distributions that keep /snap free of a top-level
+# directory use the second.
+MCA_SNAP_DIRS=(/snap /var/lib/snapd/snap)
 
 # Strings in a launcher script that mean it starts a Chromium or Electron
 # process, for the wrappers whose command line is assembled out of variables and
@@ -38,23 +52,51 @@ MCA_SYSTEM_DIRS=(
 # "chromium" on its own is not one of them: /usr/bin/xdg-open lists every
 # browser it knows how to start, and that is not a browser.
 #
-# The flag file convention is an Arch packaging habit and says nothing about the
-# engine either, so it is not in here.
-MCA_SCRIPT_HINTS='ELECTRON_|app\.asar|chrome-sandbox|libcef|enable-blink-features|ozone-platform-hint'
+# The flag file convention is one distribution's packaging habit and says
+# nothing about the engine either, so it is not in here.
+#
+# CHROMIUM_FLAGS and CHROME_WRAPPER earn their place: they are the variables
+# the Debian, Fedora and openSUSE Chromium wrappers and Google's own Chrome
+# wrapper build their command line out of, and nothing else sets them.
+MCA_SCRIPT_HINTS='ELECTRON_|app\.asar|chrome-sandbox|libcef|enable-blink-features|ozone-platform-hint|CHROMIUM_FLAGS|CHROME_WRAPPER|CHROME_VERSION_EXTRA'
 
 # ---------------------------------------------------------------------------
 # Desktop entries
 # ---------------------------------------------------------------------------
+
+# Where Flatpak and snapd put the launchers they export. Both add these to
+# XDG_DATA_DIRS themselves, through a file in /etc/profile.d - but only for a
+# session that was started after they were installed, and only for a session
+# manager that reads it at all. They are appended, after everything XDG names,
+# so a directory that is already in the search path keeps its own position and
+# the ones that were missing are still scanned.
+mca_extra_desktop_dirs() {
+	printf '%s\n' \
+		"$MCA_XDG_DATA/flatpak/exports/share/applications" \
+		/var/lib/flatpak/exports/share/applications \
+		/var/lib/snapd/desktop/applications
+}
 
 # The directories a desktop entry can come from, most specific first - which is
 # also XDG lookup order, so the first file found for an id is the one that is
 # actually used.
 mca_desktop_dirs() {
 	local dirs="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" d
-	printf '%s\n' "$MCA_APPDIR"
-	while IFS= read -r -d: d; do
-		[[ -n $d ]] && printf '%s/applications\n' "${d%/}"
-	done <<< "${dirs}:"
+	local -A seen=()
+
+	while IFS= read -r d; do
+		[[ -n $d ]] || continue
+		d="${d%/}"
+		[[ -n ${seen[$d]+set} ]] && continue
+		seen[$d]=1
+		printf '%s\n' "$d"
+	done < <(
+		printf '%s\n' "$MCA_APPDIR"
+		while IFS= read -r -d: d; do
+			[[ -n $d ]] && printf '%s/applications\n' "${d%/}"
+		done <<< "${dirs}:"
+		mca_extra_desktop_dirs
+	)
 }
 
 # mca_desktop_get <file> <key>
@@ -192,7 +234,7 @@ mca_exec_is_steam_link() {
 	case "${prog##*/}" in
 		steam|steam-runtime) return 0 ;;
 	esac
-	[[ $prog == flatpak:com.valvesoftware.Steam ]]
+	[[ $prog == flatpak:com.valvesoftware.Steam || $prog == snap:steam ]]
 }
 
 # ---------------------------------------------------------------------------
@@ -265,6 +307,11 @@ _mca_has_markers() {
 	for s in "${MCA_SYSTEM_DIRS[@]}"; do
 		[[ $dir == "$s" ]] && return 1
 	done
+	for s in "${MCA_SYSTEM_DIR_GLOBS[@]}"; do
+		# Unquoted on purpose - these are patterns, not names.
+		# shellcheck disable=SC2053
+		[[ $dir == $s ]] && return 1
+	done
 
 	for m in "${MCA_MARKERS[@]}"; do
 		[[ -e "$dir/$m" ]] && return 0
@@ -273,23 +320,118 @@ _mca_has_markers() {
 	return 1
 }
 
+# The plain assignments the script made before it handed over, for
+# _mca_script_subst to read. A variable of its own rather than something passed
+# around: every caller of _mca_script_target reads it through a command
+# substitution, so each call already works on a copy and there is nothing here
+# that two of them could collide over.
+declare -A MCA_SCRIPT_VARS=()
+
+# _mca_script_subst <text>
+# The text with $NAME and ${NAME} replaced by what the script assigned to them,
+# left in MCA_SUBST.
+#
+# Fails as soon as something turns up that only a running shell could work out
+# - a positional parameter, a name the script never set, a default value. That
+# is the point: an unresolvable path has to come out as no path at all, never
+# as a wrong one.
+MCA_SUBST=''
+
+_mca_script_subst() {
+	local text="$1" out='' rest name
+
+	while [[ $text == *'$'* ]]; do
+		out+="${text%%\$*}"
+		rest="${text#*\$}"
+
+		if [[ $rest == '{'* ]]; then
+			[[ $rest == *'}'* ]] || return 1
+			name="${rest%%\}*}"; name="${name#\{}"
+			rest="${rest#*\}}"
+		else
+			name="${rest%%[!A-Za-z0-9_]*}"
+			rest="${rest:${#name}}"
+		fi
+
+		[[ $name =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || return 1
+		[[ -n ${MCA_SCRIPT_VARS[$name]+set} ]] || return 1
+
+		out+="${MCA_SCRIPT_VARS[$name]}"
+		text="$rest"
+	done
+
+	MCA_SUBST="$out$text"
+	return 0
+}
+
 # _mca_script_target <script>
 # The program a wrapper script hands over to, so a chain like
 # heroic -> electron43 -> /usr/lib/electron43/electron can be followed.
+#
+# The assignments above the exec line are followed as well, because that is the
+# shape the Chromium wrappers outside Arch have: Debian, Ubuntu, Fedora and
+# openSUSE all set the directory and the program name into variables at the top
+# of the script and end on `exec -a "$APPNAME" "$LIBDIR/$APPNAME"`. Without
+# resolving those there is nothing to follow, and the answer would have to come
+# from the hint scan - a weaker kind of evidence than finding the binary and
+# its markers.
 _mca_script_target() {
-	local script="$1" line tok
+	local script="$1" line tok name val skip=0
 	local -a tokens
+	local re_assign='^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=([^[:space:];|&()`]*)[[:space:]]*$'
+
+	MCA_SCRIPT_VARS=()
 
 	while IFS= read -r line; do
+		if [[ $line =~ $re_assign ]]; then
+			name="${BASH_REMATCH[2]}"
+			val="${BASH_REMATCH[3]}"
+
+			# One pair of quotes around the whole value is ordinary and means
+			# nothing here. Single quotes also mean the value is literal, so
+			# there is nothing left to expand.
+			if [[ $val == \'*\' ]]; then
+				MCA_SCRIPT_VARS[$name]="${val:1:${#val}-2}"
+				continue
+			fi
+			[[ $val == \"*\" ]] && val="${val:1:${#val}-2}"
+
+			if _mca_script_subst "$val"; then
+				MCA_SCRIPT_VARS[$name]="$MCA_SUBST"
+			else
+				# Not resolvable, so anything built from it must not be either.
+				unset "MCA_SCRIPT_VARS[$name]"
+			fi
+			continue
+		fi
+
 		[[ $line =~ ^[[:space:]]*exec[[:space:]]+(.*)$ ]] || continue
 		read -r -a tokens <<< "${BASH_REMATCH[1]}"
+		skip=0
 		for tok in "${tokens[@]}"; do
-			[[ $tok == env ]] && continue
+			(( skip )) && { skip=0; continue; }
+			case "$tok" in
+				env) continue ;;
+				# `exec -a NAME PROG` renames the process. NAME is not a
+				# program, and it is usually the wrapper's own name, so
+				# following it would lead straight back here.
+				-a|--argv0) skip=1; continue ;;
+				-*) continue ;;
+			esac
 			[[ $tok == *=* && $tok != /* ]] && continue
-			[[ $tok == -* ]] && continue
-			# Anything still carrying a shell variable cannot be resolved from
-			# the outside; the hint scan has to answer for those.
-			[[ $tok == *'$'* ]] && return 1
+
+			tok="${tok%\"}"; tok="${tok#\"}"
+			tok="${tok%\'}"; tok="${tok#\'}"
+
+			# Anything still carrying a shell variable is resolved from the
+			# assignments above, or not at all; the hint scan answers for the
+			# wrappers that build their command line some other way.
+			if [[ $tok == *'$'* ]]; then
+				_mca_script_subst "$tok" || return 1
+				tok="$MCA_SUBST"
+			fi
+			[[ -n $tok ]] || return 1
+
 			if [[ $tok == /* ]]; then
 				printf '%s\n' "$tok"
 			else
@@ -302,13 +444,15 @@ _mca_script_target() {
 }
 
 # mca_flags_candidates <program>
-# The flag files a launcher reads, in the order it reads them. Arch's Electron
-# and Chromium wrappers all take extra arguments from
-# $XDG_CONFIG_HOME/<name>-flags.conf, which is a far better place to inject than
-# a desktop entry: it survives package updates and it applies to a launch from
-# the terminal too.
+# The flag files a launcher reads, in the order it reads them, taken from the
+# launcher itself rather than assumed from the distribution. Where the wrappers
+# follow that convention - Arch's Electron and Chromium packages do, and take
+# extra arguments from $XDG_CONFIG_HOME/<name>-flags.conf - it is a far better
+# place to inject than a desktop entry: it survives package updates and it
+# applies to a launch from the terminal too. Where they do not, this finds
+# nothing and the caller falls back to the desktop entry.
 mca_flags_candidates() {
-	local prog="$1" depth="${2:-0}" target
+	local prog="$1" depth="${2:-0}" target inherited
 	(( depth > 3 )) && return 0
 	[[ -r $prog ]] || return 0
 	head -c2 -- "$prog" 2>/dev/null | grep -q '#!' || return 0
@@ -316,10 +460,22 @@ mca_flags_candidates() {
 	grep -oE '[A-Za-z0-9_.+-]+-flags\.conf' -- "$prog" 2>/dev/null
 
 	# A wrapper that only execs another wrapper (heroic -> electron43) inherits
-	# that one's flag files, plus the specific name it builds from a variable.
+	# that one's flag files, plus the specific name it builds from a variable
+	# at runtime and therefore never writes down - which is why that one is
+	# derived from the target's own name rather than found.
+	#
+	# It is derived only once the target has shown that it reads a flag file at
+	# all. Every launcher that can be followed is not a launcher that reads
+	# one: the Chromium wrappers outside Arch do not, and neither does an
+	# ordinary program that simply execs its own binary. Naming a file for
+	# those would put the flag somewhere nothing ever looks and skip the
+	# desktop entry that would have worked.
 	if target="$(_mca_script_target "$prog")" && [[ -n $target ]]; then
-		printf '%s-flags.conf\n' "${target##*/}"
-		mca_flags_candidates "$target" $(( depth + 1 ))
+		inherited="$(mca_flags_candidates "$target" $(( depth + 1 )))"
+		if [[ -n $inherited ]]; then
+			printf '%s-flags.conf\n' "${target##*/}"
+			printf '%s\n' "$inherited"
+		fi
 	fi
 }
 
@@ -413,8 +569,9 @@ _mca_detect_uncached() {
 MCA_IDS=()        # desktop file id, without the .desktop suffix
 MCA_FILES=()      # the desktop entry that is in effect for that id
 MCA_NAMES=()      # display name
-MCA_PROGS=()      # resolved program, or a flatpak app id
-MCA_KINDS=()      # app | browser | flatpak | steam | unknown | no
+MCA_PROGS=()      # resolved program, or a Flatpak app id or a snap name
+MCA_KINDS=()      # app | browser | steam | unknown | no
+MCA_PACKAGING=()  # native | flatpak | snap
 
 # The shortcuts Steam writes for single games. Not applications of their own - a
 # game is whatever engine it was built with, and none of those reads a Chromium
@@ -435,11 +592,12 @@ mca_scan_once() {
 }
 
 mca_scan() {
-	local dir file id name exec_line prog kind i
+	local dir file id name exec_line prog kind packaging i
 	local -A seen=()
 	local -a c_ids=() c_files=() c_names=() c_progs=() c_browser=() c_stat=()
 
 	MCA_IDS=(); MCA_FILES=(); MCA_NAMES=(); MCA_PROGS=(); MCA_KINDS=()
+	MCA_PACKAGING=()
 	MCA_STEAM_LINKS=(); MCA_STEAM_LINK_FILES=()
 
 	# Pass one: read the entries and work out what each of them starts. No
@@ -476,6 +634,8 @@ mca_scan() {
 			if [[ ${prog##*/} == flatpak ]]; then
 				mca_exec_flatpak_id "$exec_line" || continue
 				prog="flatpak:$MCA_PROG"
+			elif mca_snap_name "$prog"; then
+				prog="snap:$MCA_PROG"
 			fi
 
 			if mca_exec_is_steam_link "$exec_line" "$prog"; then
@@ -494,14 +654,28 @@ mca_scan() {
 	MCA_STAT=()
 	_mca_stat_batch "${c_stat[@]}"
 
-	# Pass two: decide what each one is.
+	# Pass two: decide what each one is. What it does - an application or a
+	# browser - and how it was packaged are two separate questions: a Chromium
+	# installed as a snap is still a browser, and somebody who has turned
+	# browsers off means that one too.
 	for i in "${!c_ids[@]}"; do
 		prog="${c_progs[i]}"
 		kind=no
+		packaging=native
 
 		if [[ $prog == flatpak:* ]]; then
 			prog="${prog#flatpak:}"
-			mca_flatpak_is_chromium "$prog" && kind=flatpak
+			packaging=flatpak
+			mca_flatpak_is_chromium "$prog" \
+				&& { (( c_browser[i] )) && kind=browser || kind=app; }
+		elif [[ $prog == snap:* ]]; then
+			prog="${prog#snap:}"
+			packaging=snap
+			if [[ $prog == steam ]]; then
+				kind=steam
+			elif mca_snap_is_chromium "$prog"; then
+				(( c_browser[i] )) && kind=browser || kind=app
+			fi
 		elif [[ ${prog##*/} == steam || ${prog##*/} == steam-runtime ]]; then
 			# Steam is Chromium inside, but nothing about it can be changed
 			# from a command line argument; it has its own module.
@@ -519,6 +693,7 @@ mca_scan() {
 		MCA_NAMES+=("${c_names[i]}")
 		MCA_PROGS+=("$prog")
 		MCA_KINDS+=("$kind")
+		MCA_PACKAGING+=("$packaging")
 	done
 
 	mca_cache_flush
@@ -557,6 +732,66 @@ mca_desktop_is_browser() {
 	return 1
 }
 
+# mca_snap_name <program>
+# The snap an executable belongs to, left in MCA_PROG - assigned rather than
+# printed for the same reason mca_exec_program is: the scan asks this about
+# every desktop entry on the system, and a command substitution per entry is a
+# fork per entry.
+#
+# /snap/bin/<name> is the shim snapd puts in PATH and is a symlink to snapd
+# itself, so following it lands on /usr/bin/snap and says nothing whatever
+# about the application. The name is the only thing that carries information,
+# and it is what leads to the mounted tree below.
+mca_snap_name() {
+	local prog="$1" rest d
+
+	for d in "${MCA_SNAP_DIRS[@]}"; do
+		if [[ $prog == "$d/bin/"* ]]; then
+			rest="${prog#"$d/bin/"}"
+			# A snap that ships several programs names them <snap>.<app>.
+			MCA_PROG="${rest%%.*}"
+			return 0
+		fi
+		if [[ $prog == "$d/"* ]]; then
+			rest="${prog#"$d/"}"
+			MCA_PROG="${rest%%/*}"
+			return 0
+		fi
+	done
+	return 1
+}
+
+# mca_snap_is_chromium <snap name>
+# A snap keeps everything it ships inside its own mounted revision, so the
+# marker check works the same way there as anywhere else once that tree has
+# been located. "current" is the symlink snapd keeps pointing at the revision
+# that will actually be started.
+mca_snap_is_chromium() {
+	local name="$1" d root
+
+	if [[ -n ${MCA_DETECT_MEMO[snap:$name]+set} ]]; then
+		[[ ${MCA_DETECT_MEMO[snap:$name]} == yes ]]
+		return $?
+	fi
+
+	for d in "${MCA_SNAP_DIRS[@]}"; do
+		root="$d/$name/current"
+		[[ -d $root ]] || continue
+		if [[ -n "$(find "$root" -maxdepth 5 \
+			\( -name 'chrome_crashpad_handler' -o -name 'app.asar' \
+			   -o -name 'libcef.so' -o -name 'v8_context_snapshot.bin' \
+			   -o -name 'chrome-sandbox' \) \
+			-print -quit 2>/dev/null)" ]]
+		then
+			MCA_DETECT_MEMO[snap:$name]=yes
+			return 0
+		fi
+	done
+
+	MCA_DETECT_MEMO[snap:$name]=no
+	return 1
+}
+
 # mca_flatpak_is_chromium <app id>
 # Flatpak keeps every application in its own tree, so the marker check works the
 # same way once that tree has been located.
@@ -584,19 +819,28 @@ mca_flatpak_is_chromium() {
 	return 1
 }
 
-# mca_kind_wanted <kind> <id>
+# mca_kind_wanted <kind> <id> [packaging]
 # Whether the current settings say this entry should be patched. Skip beats
 # everything, an explicit include beats detection, and detection beats nothing.
+#
+# Packaging is a gate in front of the category rather than a category of its
+# own: a Flatpak or a snap sees none of the host's configuration and is worth
+# switching off as a group, but it is still an application or a browser and
+# whichever of those the user turned off applies to it too.
 mca_kind_wanted() {
-	local kind="$1" id="$2"
+	local kind="$1" id="$2" packaging="${3:-native}"
 
 	mca_config_list_has Skip "$id" && return 1
 	mca_config_list_has Include "$id" && return 0
 
+	case "$packaging" in
+		flatpak) [[ $CFG_FLATPAK == yes ]] || return 1 ;;
+		snap)    [[ $CFG_SNAP == yes ]] || return 1 ;;
+	esac
+
 	case "$kind" in
 		app)     [[ $CFG_APPS == yes ]] ;;
 		browser) [[ $CFG_BROWSERS == yes ]] ;;
-		flatpak) [[ $CFG_FLATPAK == yes && $CFG_APPS == yes ]] ;;
 		*)       return 1 ;;
 	esac
 }

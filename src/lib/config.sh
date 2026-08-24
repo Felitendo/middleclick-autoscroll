@@ -139,6 +139,7 @@ mca_config_load() {
 	CFG_APPS=no;       mca_config_bool PatchApps        yes && CFG_APPS=yes
 	CFG_BROWSERS=no;   mca_config_bool PatchBrowsers    yes && CFG_BROWSERS=yes
 	CFG_FLATPAK=no;    mca_config_bool PatchFlatpak     yes && CFG_FLATPAK=yes
+	CFG_SNAP=no;       mca_config_bool PatchSnap        yes && CFG_SNAP=yes
 	CFG_AUTOSTART=no;  mca_config_bool PatchAutostart   yes && CFG_AUTOSTART=yes
 	CFG_STEAM=no;      mca_config_bool PatchSteam       yes && CFG_STEAM=yes
 	CFG_SPOTIFY=no;    mca_config_bool PatchSpotify     yes && CFG_SPOTIFY=yes
