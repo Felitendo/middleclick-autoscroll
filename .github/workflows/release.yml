@@ -246,5 +246,9 @@ jobs:
           gpgkey=file://$PWD/pages/KEY.gpg
           EOF
           dnf install -y middleclick-autoscroll
-          middleclick-autoscroll --version
-          middleclick-autoscroll list
+
+          # As somebody, not as root: running it as root is refused, which is
+          # the point of it, and a container is root by default.
+          useradd -m tester
+          runuser -u tester -- middleclick-autoscroll --version
+          runuser -u tester -- middleclick-autoscroll list
