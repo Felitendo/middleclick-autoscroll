@@ -245,7 +245,9 @@ jobs:
           repo_gpgcheck=1
           gpgkey=file://$PWD/pages/KEY.gpg
           EOF
-          dnf install -y middleclick-autoscroll
+          # util-linux-core is for runuser below; the base image has no need
+          # of it and does not carry it.
+          dnf install -y middleclick-autoscroll util-linux-core
 
           # As somebody, not as root: running it as root is refused, which is
           # the point of it, and a container is root by default.
