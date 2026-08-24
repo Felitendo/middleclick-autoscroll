@@ -98,14 +98,21 @@ helper, inside Steam's own installation:
 
 	~/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 
-Steam checksums that script at every start and restores it when it differs, so
-its launcher entry also gets *-noverifyfiles*. The trade-off is that Steam no
-longer repairs a damaged installation on its own; that is why Steam is a switch
-of its own in the settings.
+Steam compares the installed files against its manifest at every start - by
+size, not by content - and restores whatever differs, so its launcher entry
+gets *-noverifyfiles*. So does its entry in _~/.config/autostart_, which Steam
+writes as soon as it is set to run at login: that entry bypasses the menu one
+entirely, and without the switch a Steam started at login spends the session in
+an update dialog. The trade-off is that Steam no longer repairs a damaged
+installation on its own; that is why Steam is a switch of its own in the
+settings.
 
-Starting Steam from a terminal without *-noverifyfiles* undoes the patch for
-that session. The watcher notices and puts it back, so the next start has it
-again.
+Starting Steam some other way - from a terminal, from a script - leaves the
+switch out, and Steam puts its own copy of the script back for that session.
+The patch returns at the next apply with Steam closed. It is deliberately not
+repeated while the client is running: the two would only undo each other, and
+the helper is started once, at the start, so it would not help that session
+anyway.
 
 # SPOTIFY
 

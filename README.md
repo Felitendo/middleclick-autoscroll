@@ -118,17 +118,26 @@ Steam's own installation:
 ~/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 ```
 
-Steam checksums that script at every start and restores it when it differs, so
-its launcher entry also gets `-noverifyfiles`. **The trade-off is real**: with
-verification off, Steam no longer repairs a damaged installation by itself. That
-is why Steam is a switch of its own rather than part of the general handling —
-turn it off in the settings and Steam is left completely alone.
+Steam compares the installed files against its manifest at every start — by
+size, not by content — and restores whatever differs, so its launcher entry gets
+`-noverifyfiles`. So does its entry in `~/.config/autostart`, which Steam writes
+as soon as it is set to run at login: that one bypasses the menu entry entirely,
+and without the switch a Steam started at login finds the patched script,
+restores it, gets patched again, and never gets past its update dialog.
+
+**The trade-off is real**: with verification off, Steam no longer repairs a
+damaged installation by itself. That is why Steam is a switch of its own rather
+than part of the general handling — turn it off in the settings and Steam is
+left completely alone.
 
 The script comes back on every client update. The watcher notices and puts the
 patch back.
 
-Starting Steam from a terminal without `-noverifyfiles` undoes it for that one
-session; the next start from the menu has it again.
+Starting Steam some other way — from a terminal, from a script — leaves the
+switch out and Steam puts its own copy back for that session. The patch returns
+at the next apply with Steam closed; it is deliberately not repeated while the
+client is running, because the two would only undo each other and the helper is
+started once, at the start.
 
 ## Applications installed later
 

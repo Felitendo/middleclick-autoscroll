@@ -345,6 +345,12 @@ mca_desktop_apply() {
 # ~/.config/autostart, pointing straight at their binary. Those bypass the
 # desktop entry in the menu completely, which is why Discord launched at login
 # used to behave differently from Discord launched from the menu.
+#
+# Steam is here too, even though it is not a Chromium process itself: its entry
+# needs -noverifyfiles exactly like the menu one, and it is the entry most
+# likely to exist, because Steam writes it as soon as "run at startup" is
+# ticked. Without it, a Steam started at login restores the patched web helper
+# script and the watcher patches it back, over and over.
 
 mca_autostart_apply() {
 	local dir="$MCA_XDG_CONFIG/autostart" file exec_line prog content backup
@@ -360,9 +366,16 @@ mca_autostart_apply() {
 
 		mca_exec_program "$exec_line" || continue
 		prog="$MCA_PROG"
-		mca_is_chromium "$prog" || continue
 
-		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
+		if [[ ${prog##*/} == steam || ${prog##*/} == steam-runtime ]]; then
+			[[ $CFG_STEAM == yes ]] || continue
+			content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
+				"$MCA_STEAM_LAUNCH_FLAG" after-program)"
+		else
+			[[ $CFG_AUTOSTART == yes ]] || continue
+			mca_is_chromium "$prog" || continue
+			content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
+		fi
 		[[ -n $content ]] || continue
 		[[ "$content" == "$(< "$file")" ]] && continue
 

@@ -43,6 +43,9 @@ msgstr "nicht erkennbar"
 msgid "not patched yet"
 msgstr "noch nicht gepatcht"
 
+msgid "waiting until Steam is closed"
+msgstr "wartet, bis Steam geschlossen ist"
+
 
 #. Status block
 msgid "Autoscroll"
@@ -175,6 +178,9 @@ msgstr "Bereits auf %d Anwendungen angewendet."
 
 msgid "Steam starts its interface in a way this version does not recognise; leaving it alone."
 msgstr "Steam startet seine Oberfläche auf eine Art, die diese Version nicht kennt; Steam bleibt unangetastet."
+
+msgid "Steam is running and has put its own file back; the change waits until Steam is closed."
+msgstr "Steam läuft und hat seine eigene Datei wiederhergestellt; die Änderung wird nachgeholt, sobald Steam geschlossen ist."
 
 
 #. Help

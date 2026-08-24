@@ -43,6 +43,9 @@ msgstr ""
 msgid "not patched yet"
 msgstr ""
 
+msgid "waiting until Steam is closed"
+msgstr ""
+
 
 #. Status block
 msgid "Autoscroll"
@@ -174,6 +177,9 @@ msgid "Already applied to %d applications."
 msgstr ""
 
 msgid "Steam starts its interface in a way this version does not recognise; leaving it alone."
+msgstr ""
+
+msgid "Steam is running and has put its own file back; the change waits until Steam is closed."
 msgstr ""
 
 

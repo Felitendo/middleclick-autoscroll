@@ -178,6 +178,9 @@ mca_ui_status() {
 	if mca_steam_installed; then
 		if mca_steam_patched; then
 			_mca_row "$(mca_msg "Steam")" "$(_mca_onoff yes)"
+		elif [[ $CFG_STEAM == yes && $CFG_ENABLED == yes ]] && mca_steam_waiting; then
+			_mca_row "$(mca_msg "Steam")" \
+				"${MCA_C_DIM}$(mca_msg "waiting until Steam is closed")${MCA_C_RESET}"
 		elif [[ $CFG_STEAM == yes && $CFG_ENABLED == yes ]]; then
 			_mca_row "$(mca_msg "Steam")" \
 				"${MCA_C_YELLOW}$(mca_msg "not patched yet")${MCA_C_RESET}"

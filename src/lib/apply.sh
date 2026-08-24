@@ -107,7 +107,12 @@ mca_apply() {
 		mca_steam_apply
 	fi
 
-	[[ $CFG_AUTOSTART == yes ]] && mca_autostart_apply
+	# Steam's autostart entry carries Steam's own switch and follows the Steam
+	# setting, not this one - leaving it out while Steam is patched is what puts
+	# the client in an update loop - so both are checked inside.
+	if [[ $CFG_AUTOSTART == yes || $CFG_STEAM == yes ]]; then
+		mca_autostart_apply
+	fi
 	[[ $CFG_SPOTIFY == yes ]] && mca_spotify_apply
 
 	mca_prune_orphans

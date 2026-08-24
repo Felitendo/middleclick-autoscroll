@@ -239,6 +239,14 @@ mca_ledger_forget() {
 }
 
 
+# mca_backup_name <file>
+# The name a backup copy of that file is stored under. Derived from the path
+# rather than remembered, so a caller can ask whether a file has been backed up
+# before without reading the ledger.
+mca_backup_name() {
+	printf '%s' "$1" | sed 's|/|%|g'
+}
+
 # mca_backup <file>
 # Copies a file aside before it is edited in place, and prints the name the
 # copy was stored under. Existing backups are never overwritten: the first copy
@@ -246,7 +254,7 @@ mca_ledger_forget() {
 # patched version.
 mca_backup() {
 	local file="$1" name
-	name="$(printf '%s' "$file" | sed 's|/|%|g')"
+	name="$(mca_backup_name "$file")"
 
 	mkdir -p "$MCA_BACKUPDIR" 2>/dev/null || return 1
 	if [[ ! -e "$MCA_BACKUPDIR/$name" ]]; then

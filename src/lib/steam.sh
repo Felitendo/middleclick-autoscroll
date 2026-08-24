@@ -9,11 +9,19 @@
 #
 #   ~/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 #
-# Steam checksums that script at every start and restores it when it differs,
-# which is why the launcher gets -noverifyfiles as well. The trade-off is real
-# and belongs to the user, so this is a switch of its own rather than part of
-# the general application handling: with verification off, Steam no longer
-# repairs a damaged installation by itself.
+# Steam compares the installed files against its manifest at every start - by
+# size, not by content - and restores whatever differs, which is why the
+# launcher gets -noverifyfiles as well. The trade-off is real and belongs to
+# the user, so this is a switch of its own rather than part of the general
+# application handling: with verification off, Steam no longer repairs a
+# damaged installation by itself.
+#
+# Every way of starting Steam has to carry that switch, or the two programs
+# spend the session undoing each other: Steam restores the script, the watcher
+# patches it again, Steam restores it again, and the client never gets past its
+# update dialog. So the autostart entry gets it as well as the menu one (see
+# mca_autostart_apply), and the patch below stays out of the way of a client
+# that is already running.
 #
 # The file comes back on every client update, and the watcher re-applies the
 # patch when that happens.
@@ -64,6 +72,23 @@ mca_steam_installed() {
 	return 1
 }
 
+# mca_steam_running
+# Steam records its own process id beside its installation while it runs. The
+# file outlives a crash, so the id is checked rather than believed.
+mca_steam_running() {
+	local f pid
+	for f in \
+		"$HOME/.steam/steam.pid" \
+		"$HOME/.var/app/com.valvesoftware.Steam/.steam/steam.pid"
+	do
+		[[ -r $f ]] || continue
+		pid="$(< "$f")"
+		[[ $pid =~ ^[0-9]+$ ]] || continue
+		kill -0 "$pid" 2>/dev/null && return 0
+	done
+	return 1
+}
+
 # mca_steam_script_patched <script>
 mca_steam_script_patched() {
 	grep -q -- "$MCA_FEATURE" "$1" 2>/dev/null
@@ -74,6 +99,26 @@ mca_steam_patched() {
 	while IFS= read -r root; do
 		script="$(mca_steam_script "$root")" || continue
 		mca_steam_script_patched "$script" && return 0
+	done < <(mca_steam_roots)
+	return 1
+}
+
+# mca_steam_deferred <script>
+# Whether the patch is being held back rather than simply missing: the script
+# was patched before, its own copy is back, and Steam is still running. See
+# mca_steam_apply for why that is left alone.
+mca_steam_deferred() {
+	[[ -e "$MCA_BACKUPDIR/$(mca_backup_name "$1")" ]] && mca_steam_running
+}
+
+# mca_steam_waiting
+# The same question for the status screen, which has no script in hand.
+mca_steam_waiting() {
+	local root script
+	while IFS= read -r root; do
+		script="$(mca_steam_script "$root")" || continue
+		mca_steam_script_patched "$script" && continue
+		mca_steam_deferred "$script" && return 0
 	done < <(mca_steam_roots)
 	return 1
 }
@@ -106,6 +151,16 @@ mca_steam_apply() {
 		found=1
 
 		mca_steam_script_patched "$script" && continue
+
+		# Not patched now, but patched before: Steam has just put its own copy
+		# back. Patching it again while the client watches is what turns one
+		# size mismatch into an endless update dialog, and it would not help
+		# this session anyway - the helper is started once, at the start. The
+		# patch waits for the next apply with Steam closed.
+		if mca_steam_deferred "$script"; then
+			mca_note "$(mca_msg "Steam is running and has put its own file back; the change waits until Steam is closed.")"
+			continue
+		fi
 
 		lineno="$(_mca_steam_exec_line "$script")"
 		if [[ -z $lineno ]]; then
