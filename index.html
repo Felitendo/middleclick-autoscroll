@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>middleclick-autoscroll</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1b1f23;
+    --muted: #57606a;
+    --rule: #d8dee4;
+    --code-bg: #f6f8fa;
+    --accent: #1793d1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #9198a1;
+      --rule: #30363d;
+      --code-bg: #161b22;
+      --accent: #58a6ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    padding: 3rem 1.25rem 5rem;
+    max-width: 46rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  }
+  h1 { font-size: 1.6rem; margin: 0 0 .4rem; }
+  h2 {
+    font-size: 1.05rem; margin: 2.5rem 0 .6rem;
+    padding-bottom: .3rem; border-bottom: 1px solid var(--rule);
+  }
+  p.lead { color: var(--muted); margin: 0 0 2rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  code {
+    background: var(--code-bg); padding: .12em .35em;
+    border-radius: 4px; font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    overflow-x: auto;
+  }
+  pre code { background: none; padding: 0; font-size: .85rem; }
+  footer {
+    margin-top: 3.5rem; padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    color: var(--muted); font-size: .9rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>middleclick-autoscroll</h1>
+<p class="lead">
+  Middle-click autoscroll — hold the middle mouse button, move the pointer, the
+  page scrolls — in every Chromium-based application on the system, and in
+  anything installed later.
+</p>
+
+<p>
+  This page is the package repository. Set it up once and every new version
+  arrives with the rest of your system updates. The
+  <a href="https://github.com/Felitendo/middleclick-autoscroll">source and the
+  documentation</a> are on GitHub.
+</p>
+
+<h2>Debian, Ubuntu, Linux Mint, Pop!_OS</h2>
+<pre><code>sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://felitendo.github.io/middleclick-autoscroll/KEY.gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/middleclick-autoscroll.gpg
+echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felitendo.github.io/middleclick-autoscroll/deb ./" \
+  | sudo tee /etc/apt/sources.list.d/middleclick-autoscroll.list
+sudo apt update
+sudo apt install middleclick-autoscroll</code></pre>
+
+<h2>Fedora, RHEL, CentOS Stream</h2>
+<pre><code>sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
+  https://felitendo.github.io/middleclick-autoscroll/middleclick-autoscroll.repo
+sudo dnf install middleclick-autoscroll</code></pre>
+
+<h2>openSUSE</h2>
+<pre><code>sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
+sudo zypper addrepo --gpgcheck --refresh https://felitendo.github.io/middleclick-autoscroll/rpm middleclick-autoscroll
+sudo zypper install middleclick-autoscroll</code></pre>
+
+<h2>Arch, CachyOS, EndeavourOS, Manjaro</h2>
+<pre><code>paru -S middleclick-autoscroll</code></pre>
+
+<h2>Then, once</h2>
+<pre><code>middleclick-autoscroll enable</code></pre>
+<p>
+  That is the whole setup. Nothing else has to be configured and no file has to
+  be edited. Run <code>middleclick-autoscroll disable</code> before removing the
+  package — it puts back everything that was changed.
+</p>
+
+<footer>
+  GPL-3.0-or-later. Packages are signed; the public key is
+  <a href="https://felitendo.github.io/middleclick-autoscroll/KEY.gpg">KEY.gpg</a>.
+</footer>
+
+</body>
+</html>

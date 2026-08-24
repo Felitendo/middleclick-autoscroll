@@ -1,0 +1,7 @@
+[middleclick-autoscroll]
+name=middleclick-autoscroll
+baseurl=https://felitendo.github.io/middleclick-autoscroll/rpm
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://felitendo.github.io/middleclick-autoscroll/KEY.gpg

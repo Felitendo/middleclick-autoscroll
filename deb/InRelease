@@ -1,0 +1,42 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Architectures: all
+Codename: stable
+Components: main
+Date: Mon, 24 Aug 2026 09:10:46 +0000
+Label: middleclick-autoscroll
+Origin: middleclick-autoscroll
+Suite: stable
+MD5Sum:
+ fadba057156ca6ec730b519e604d0cf1             1468 Packages
+ dbfa50f7f7f58508d66eaa54806aac49              890 Packages.gz
+ 4d0a58d5855902646eccf0ca08ef529f              166 Release
+SHA1:
+ 34493a28bce52ae6d951bb7640757f3f49d6dccd             1468 Packages
+ b3ad5c87d003ca05dfceb9aef46da622219a19df              890 Packages.gz
+ 801f1ed566e884994e94835579c2ae53f61d662a              166 Release
+SHA256:
+ 9f6b8d85ff4eb43704e2d00ec2bac554294e4a494349dfd44bd51a3fd32a6a62             1468 Packages
+ d8bf2cdeb05687929437950ec5c054dacb4678665ddac7fcec573c3ff7ff7d1a              890 Packages.gz
+ 720666020d6c6aef9fef764a994368d4a10b3343bc45203d48728c355004d3d3              166 Release
+SHA512:
+ 0a7e8000829733724516bd2194c5f1546c05c61a024481d5ce11da16d407a5482c99bed5b42db8b7c54e19e8b5377a9ae76443b51c37698e5d3f706855410759             1468 Packages
+ 52551e11ef0a0ef6264cfdf6e9b5a2c68a38dce6d9db655b317b1f076e2490caf8e59df1511d30cb0e518beebfdd74d6c7f277967c7875eb3261b565c178be3e              890 Packages.gz
+ 73c50e47d9970de3951661ea0f59a4fea3b262ab325eb339093b5edb2fa0265decf17f29cdf4111e000b62cad6b1f21317c3ec8fe48b1805fd404827403d324f              166 Release
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEY4PI9Dc7LesUkuKsVaPG3ykUTHkFAmqMCpYACgkQVaPG3ykU
+THnQOw/9H2qWcx7d/vlk+h2nqWEjHIcguxWQuVd/G9BU9t0dvVB3IX1p8fvMh9+5
+7ZA3PDGvFSmnE+OdJd90Qn9QRKhlwBqZGg5rrsF7QvwHGkwWpHIQWvbyAvVFTuGc
+95Rsu8qs3XM1yxTc8Dva4d4TtrtgCZByOfPaFX+x5XAbCCfS7Ewa4qXKREJldcBH
+uBS7T1Jk/G8U2znazj+aceUuNVek5jh+BkJPg3vGx4TWyHQruaBHpgntXwIfYkJf
+Jur0Tv4mZJYH+sMZrJY6FPFfClfpqRkvHBxkYEuXNBWETQyKT9RnNLTly04sxQvY
+nx8y3VsY9336jaoijjeRIVSbXWrECeRhx3wO2/kQDpOavxImlXhttR8Ba/jfARhh
+k4eM0MAirT6idKVOvKo70mx1a1L4n0FwG9Czxk2um3AOberVerNsquiwgd/QHWSs
+8gknRWL1+LsSTdS22gRW6RmcPP5Oom9YhuW9uemhePDK7z5fFJPUz/L8TZYYp6RD
+zUxKh+xZqGaSrIizktRC/Tvgx2NNHkKpDVuCeqjxAIq8gYIdKzsS78Nn7NxJDcS1
+X8OBbF1Ij/M8pGVidOLpsLu97RYqOBOHLkcDVoIZ0+GY6paUjzAtGnHm9ImL4uMJ
+j4TV6f/XI7mRYZ+oeKUg/TkuQIBPDROeHFnAk3OxlpP2cQjqjVA=
+=aZmO
+-----END PGP SIGNATURE-----
