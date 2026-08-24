@@ -1,0 +1,156 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    name: Debian package
+    runs-on: ubuntu-latest
+    container: debian:stable
+    steps:
+      - name: Install the build tools
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends \
+            ca-certificates git make gettext scdoc dpkg-dev
+
+      - uses: actions/checkout@v4
+
+      - name: Check the tag against the Makefile
+        run: packaging/check-version.sh "${{ github.ref_name }}"
+
+      - run: packaging/build-deb.sh
+
+      - name: Look inside what was built
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/*.deb
+          if-no-files-found: error
+
+  rpm:
+    name: RPM package
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install the build tools
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            git make gettext scdoc tar rpm-build rpm-sign systemd-rpm-macros
+
+      - uses: actions/checkout@v4
+
+      - name: Check the tag against the Makefile
+        run: packaging/check-version.sh "${{ github.ref_name }}"
+
+      - run: packaging/build-rpm.sh
+
+      # Signed here rather than alongside the APT repository, because this is
+      # the one place with a native rpm-sign.
+      - name: Sign the package
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "No GPG_PRIVATE_KEY secret; leaving the package unsigned."
+            exit 0
+          fi
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          keyid="$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')"
+          rpmsign --define "_gpg_name $keyid" --addsign dist/*.rpm
+          rpm --checksig dist/*.rpm
+
+      - name: Look inside what was built
+        run: |
+          rpm -qip dist/*.rpm
+          rpm -qlp dist/*.rpm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: dist/*.rpm
+          if-no-files-found: error
+
+  publish:
+    name: Release and repositories
+    needs: [deb, rpm]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          merge-multiple: true
+
+      - name: Attach the packages to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            incoming/* \
+          || gh release upload "${{ github.ref_name }}" incoming/* --clobber
+
+      - name: Install the repository tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            dpkg-dev apt-utils createrepo-c
+
+      - name: Import the signing key
+        id: key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "present=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::No GPG_PRIVATE_KEY secret - the apt and dnf repositories were not updated. The packages are on the release."
+            exit 0
+          fi
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "present=yes" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the published repositories
+        if: steps.key.outputs.present == 'yes'
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: pages
+        continue-on-error: true
+
+      - name: Update the repositories
+        if: steps.key.outputs.present == 'yes'
+        run: |
+          # First release: the branch does not exist yet.
+          if [ ! -d pages/.git ]; then
+            rm -rf pages && mkdir pages
+            git -C pages init -q -b gh-pages
+            git -C pages remote add origin "https://github.com/${{ github.repository }}.git"
+          fi
+          packaging/publish-repos.sh pages incoming
+
+      - name: Push them
+        if: steps.key.outputs.present == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --quiet --cached && { echo "nothing changed"; exit 0; }
+          git commit -q -m "Publish ${{ github.ref_name }}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:gh-pages

@@ -41,11 +41,17 @@ LIBS         := $(wildcard src/lib/*.sh)
 MSGFMT       := $(shell command -v msgfmt 2>/dev/null)
 SCDOC        := $(shell command -v scdoc 2>/dev/null)
 
-.PHONY: all build install uninstall check clean
+.PHONY: all build install uninstall check clean version
 
 all: build
 
 build: $(MOFILES) $(MANPAGE)
+
+# The one place the version is written down, for everything that has to agree
+# with it: the packaging scripts, and the release workflow checking that the
+# tag it was handed says the same thing.
+version:
+	@echo $(VERSION)
 
 po/%.mo: po/%.po
 ifdef MSGFMT

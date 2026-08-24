@@ -14,9 +14,9 @@ paru -S middleclick-autoscroll     # Arch and its derivatives
 middleclick-autoscroll enable
 ```
 
-There is no package for anything else yet, so elsewhere it is `make && sudo
-make install` from a checkout and then the same one command. See
-[Building from source](#building-from-source).
+For Debian, Ubuntu, Fedora and openSUSE there is a package repository — see
+[Installing](#installing) for the three lines that add it. Updates then arrive
+with the rest of the system's.
 
 That is the whole setup. Nothing else has to be configured, and no file has to
 be edited.
@@ -205,6 +205,51 @@ Run this before uninstalling the package.
 
 See `man middleclick-autoscroll` for the details.
 
+## Installing
+
+**Arch, CachyOS, EndeavourOS, Manjaro**
+
+```bash
+paru -S middleclick-autoscroll
+```
+
+**Debian, Ubuntu, Linux Mint, Pop!_OS**
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://felitendo.github.io/middleclick-autoscroll/KEY.gpg \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/middleclick-autoscroll.gpg
+echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felitendo.github.io/middleclick-autoscroll/deb ./" \
+  | sudo tee /etc/apt/sources.list.d/middleclick-autoscroll.list
+sudo apt update && sudo apt install middleclick-autoscroll
+```
+
+**Fedora, RHEL, CentOS Stream**
+
+```bash
+sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
+  https://felitendo.github.io/middleclick-autoscroll/middleclick-autoscroll.repo
+sudo dnf install middleclick-autoscroll
+```
+
+**openSUSE**
+
+```bash
+sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
+sudo zypper addrepo --gpgcheck --refresh \
+  https://felitendo.github.io/middleclick-autoscroll/rpm middleclick-autoscroll
+sudo zypper install middleclick-autoscroll
+```
+
+Then `middleclick-autoscroll enable`, once. Every package is signed, and a new
+version arrives with `apt upgrade`, `dnf upgrade` or `zypper up` like anything
+else. Anywhere without a package, build it — [from source](#building-from-source)
+— or take the `.deb` or the `.rpm` off the
+[releases page](https://github.com/Felitendo/middleclick-autoscroll/releases).
+
+Run `middleclick-autoscroll disable` before removing the package: it puts back
+everything that was changed.
+
 ## Distributions
 
 Any of them. Nothing here is keyed to a distribution name — what differs is
@@ -252,6 +297,11 @@ sudo make PREFIX=/usr/local install
 ```
 
 `make check` runs `bash -n` and, if installed, `shellcheck` over every script.
+
+The `.deb` and the `.rpm` are built from the same `make install`, by
+`packaging/build-deb.sh` and `packaging/build-rpm.sh`. See
+[packaging/README.md](packaging/README.md) for how a release is made and how
+the repositories are signed.
 
 ## License
 

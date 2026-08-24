@@ -1,3 +1,6 @@
 # build artifacts
 po/*.mo
 doc/*.1
+
+# packages
+dist/

@@ -1,0 +1,28 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: syntax and shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Makefile skips whatever is missing rather than failing, so the
+      # tools it looks for have to be here or the check checks less than it
+      # appears to.
+      - name: Install the tools the Makefile looks for
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            shellcheck gettext scdoc
+
+      - run: make check
+
+      - name: Build the catalogs and the man page
+        run: make build
