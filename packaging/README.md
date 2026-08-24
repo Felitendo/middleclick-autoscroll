@@ -36,6 +36,18 @@ refuses the tag if it disagrees with the Makefile, attaches the packages to a
 GitHub release, and adds them to the APT and RPM repositories on the `gh-pages`
 branch. Nothing else has to be done by hand.
 
+## Trying the release path first
+
+```bash
+gh workflow run release.yml -f dry_run=true
+```
+
+Builds both packages, builds both repositories with a key generated on the
+spot, checks the three signatures it wrote, and then installs the packages back
+out of the repositories — apt on the runner, dnf in a Fedora container. Nothing
+is pushed and no release is made. This is worth running after any change to the
+packaging, because the alternative is finding out from a tag.
+
 ## Setting up the signing, once
 
 The repositories are signed, so this needs a key. Make one that exists for
