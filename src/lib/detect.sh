@@ -180,6 +180,21 @@ mca_exec_flatpak_id() {
 	return 1
 }
 
+# mca_exec_is_steam_link <exec line> <program>
+# Whether an entry starts something inside Steam rather than starting Steam
+# itself: it carries a steam:// address of its own. Steam writes one of those
+# for every game somebody asks for a shortcut to, and the client's own entry
+# never has one - it takes an address from the outside, through %U.
+mca_exec_is_steam_link() {
+	local line="$1" prog="$2"
+
+	[[ $line == *steam://* ]] || return 1
+	case "${prog##*/}" in
+		steam|steam-runtime) return 0 ;;
+	esac
+	[[ $prog == flatpak:com.valvesoftware.Steam ]]
+}
+
 # ---------------------------------------------------------------------------
 # Is this Chromium?
 # ---------------------------------------------------------------------------
@@ -401,6 +416,14 @@ MCA_NAMES=()      # display name
 MCA_PROGS=()      # resolved program, or a flatpak app id
 MCA_KINDS=()      # app | browser | flatpak | steam | unknown | no
 
+# The shortcuts Steam writes for single games. Not applications of their own - a
+# game is whatever engine it was built with, and none of those reads a Chromium
+# argument - so they are kept apart from the list rather than listed as
+# something that got switched on. They do start Steam, which is why they are
+# kept at all: the Steam module gives them Steam's own switch.
+MCA_STEAM_LINKS=()       # desktop file id
+MCA_STEAM_LINK_FILES=()  # the entry that is in effect for it
+
 # A scan reads every desktop entry on the system, so the menu does it once and
 # then redraws from what it found. Applying rescans on its own, so nothing else
 # has to remember to invalidate this.
@@ -417,6 +440,7 @@ mca_scan() {
 	local -a c_ids=() c_files=() c_names=() c_progs=() c_browser=() c_stat=()
 
 	MCA_IDS=(); MCA_FILES=(); MCA_NAMES=(); MCA_PROGS=(); MCA_KINDS=()
+	MCA_STEAM_LINKS=(); MCA_STEAM_LINK_FILES=()
 
 	# Pass one: read the entries and work out what each of them starts. No
 	# detection yet - that needs a stat per program, and those are collected so
@@ -452,6 +476,12 @@ mca_scan() {
 			if [[ ${prog##*/} == flatpak ]]; then
 				mca_exec_flatpak_id "$exec_line" || continue
 				prog="flatpak:$MCA_PROG"
+			fi
+
+			if mca_exec_is_steam_link "$exec_line" "$prog"; then
+				MCA_STEAM_LINKS+=("$id")
+				MCA_STEAM_LINK_FILES+=("$file")
+				continue
 			fi
 
 			c_ids+=("$id"); c_files+=("$file"); c_names+=("$name")

@@ -107,6 +107,12 @@ an update dialog. The trade-off is that Steam no longer repairs a damaged
 installation on its own; that is why Steam is a switch of its own in the
 settings.
 
+The shortcuts Steam writes for single games carry the switch too. A game is not
+an application this program has anything to offer and none of them is listed
+under *Applications*, but starting one with Steam closed is a Steam start like
+any other, and without the switch it costs the interface its autoscroll for the
+rest of the session.
+
 Starting Steam some other way - from a terminal, from a script - leaves the
 switch out, and Steam puts its own copy of the script back for that session.
 The patch returns at the next apply with Steam closed. It is deliberately not

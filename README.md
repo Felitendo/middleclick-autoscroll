@@ -125,6 +125,12 @@ as soon as it is set to run at login: that one bypasses the menu entry entirely,
 and without the switch a Steam started at login finds the patched script,
 restores it, gets patched again, and never gets past its update dialog.
 
+The shortcuts Steam writes for single games get the switch as well. A game is
+not an application this program has anything to offer — none of them is a
+Chromium process and none appears in the applications list — but starting one
+with Steam closed is a Steam start like any other, and leaving the switch out
+there costs the interface its autoscroll for the rest of the session.
+
 **The trade-off is real**: with verification off, Steam no longer repairs a
 damaged installation by itself. That is why Steam is a switch of its own rather
 than part of the general handling — turn it off in the settings and Steam is

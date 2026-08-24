@@ -107,6 +107,17 @@ mca_apply() {
 		mca_steam_apply
 	fi
 
+	# The shortcuts Steam writes for single games. They are not applications
+	# and are not offered as ones, but starting a game with Steam closed is a
+	# Steam start like any other: without the switch the client finds the
+	# patched helper script, puts its own back, and the interface loses
+	# autoscroll for the rest of the session.
+	if [[ $CFG_STEAM == yes ]]; then
+		for i in "${!MCA_STEAM_LINKS[@]}"; do
+			mca_steam_desktop_apply "${MCA_STEAM_LINKS[i]}" "${MCA_STEAM_LINK_FILES[i]}"
+		done
+	fi
+
 	# Steam's autostart entry carries Steam's own switch and follows the Steam
 	# setting, not this one - leaving it out while Steam is patched is what puts
 	# the client in an update loop - so both are checked inside.
