@@ -20,7 +20,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             ca-certificates git make gettext scdoc dpkg-dev
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the tag against the Makefile
         run: packaging/check-version.sh "${{ github.ref_name }}"
@@ -32,7 +32,7 @@ jobs:
           dpkg-deb --info dist/*.deb
           dpkg-deb --contents dist/*.deb
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: deb
           path: dist/*.deb
@@ -48,7 +48,7 @@ jobs:
           dnf install -y --setopt=install_weak_deps=False \
             git make gettext scdoc tar rpm-build rpm-sign systemd-rpm-macros
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the tag against the Makefile
         run: packaging/check-version.sh "${{ github.ref_name }}"
@@ -75,7 +75,7 @@ jobs:
           rpm -qip dist/*.rpm
           rpm -qlp dist/*.rpm
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rpm
           path: dist/*.rpm
@@ -87,9 +87,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: incoming
           merge-multiple: true
@@ -125,7 +125,7 @@ jobs:
 
       - name: Check out the published repositories
         if: steps.key.outputs.present == 'yes'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: pages
