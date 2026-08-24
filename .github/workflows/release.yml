@@ -4,6 +4,14 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: >-
+          Build the repositories with a throwaway key and install from them,
+          without publishing anything. This is how the release path gets
+          exercised without cutting a tag.
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -56,18 +64,26 @@ jobs:
       - run: packaging/build-rpm.sh
 
       # Signed here rather than alongside the APT repository, because this is
-      # the one place with a native rpm-sign.
+      # the one place with a native rpm-sign. A dry run signs with a key it
+      # makes on the spot, so the command itself is still exercised.
       - name: Sign the package
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
+            gpg --batch --passphrase '' --quick-generate-key \
+              'dry run <dry-run@example.invalid>' rsa2048 sign never
+          elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+            printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          else
             echo "No GPG_PRIVATE_KEY secret; leaving the package unsigned."
             exit 0
           fi
-          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           keyid="$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')"
           rpmsign --define "_gpg_name $keyid" --addsign dist/*.rpm
+          gpg --armor --export "$keyid" > dist/rpm-signer.asc
+          rpm --import dist/rpm-signer.asc
           rpm --checksig dist/*.rpm
 
       - name: Look inside what was built
@@ -78,13 +94,15 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: rpm
-          path: dist/*.rpm
+          path: |
+            dist/*.rpm
+            dist/rpm-signer.asc
           if-no-files-found: error
 
   publish:
     name: Release and repositories
     needs: [deb, rpm]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.dry_run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -95,14 +113,16 @@ jobs:
           merge-multiple: true
 
       - name: Attach the packages to the release
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
             --generate-notes \
-            incoming/* \
-          || gh release upload "${{ github.ref_name }}" incoming/* --clobber
+            incoming/*.deb incoming/*.rpm \
+          || gh release upload "${{ github.ref_name }}" \
+            incoming/*.deb incoming/*.rpm --clobber
 
       - name: Install the repository tools
         run: |
@@ -110,21 +130,26 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             dpkg-dev apt-utils createrepo-c
 
-      - name: Import the signing key
+      - name: Get a signing key
         id: key
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ -z "${GPG_PRIVATE_KEY:-}" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
+            gpg --batch --passphrase '' --quick-generate-key \
+              'dry run <dry-run@example.invalid>' rsa2048 sign never
+          elif [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+            printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          else
             echo "present=no" >> "$GITHUB_OUTPUT"
             echo "::warning::No GPG_PRIVATE_KEY secret - the apt and dnf repositories were not updated. The packages are on the release."
             exit 0
           fi
-          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
           echo "present=yes" >> "$GITHUB_OUTPUT"
 
       - name: Check out the published repositories
-        if: steps.key.outputs.present == 'yes'
+        if: steps.key.outputs.present == 'yes' && !inputs.dry_run
         uses: actions/checkout@v7
         with:
           ref: gh-pages
@@ -134,16 +159,48 @@ jobs:
       - name: Update the repositories
         if: steps.key.outputs.present == 'yes'
         run: |
-          # First release: the branch does not exist yet.
+          # First release, or a dry run: there is no branch to start from.
           if [ ! -d pages/.git ]; then
             rm -rf pages && mkdir pages
             git -C pages init -q -b gh-pages
             git -C pages remote add origin "https://github.com/${{ github.repository }}.git"
           fi
+          rm -f incoming/rpm-signer.asc
           packaging/publish-repos.sh pages incoming
 
-      - name: Push them
+      - name: Check that what was written can be verified
         if: steps.key.outputs.present == 'yes'
+        run: |
+          find pages -type f -not -path '*/.git/*' | sort
+          echo '--- Release ---'; cat pages/deb/Release
+          echo '--- Packages ---'; cat pages/deb/Packages
+          gpg --verify pages/deb/InRelease
+          gpg --verify pages/deb/Release.gpg pages/deb/Release
+          gpg --verify pages/rpm/repodata/repomd.xml.asc pages/rpm/repodata/repomd.xml
+
+      # The proof that the repository works is apt reading it: the signature,
+      # the index, the dependencies and the program that comes out the far end.
+      - name: Install from the repository that was just built
+        if: inputs.dry_run
+        run: |
+          sudo install -d -m 0755 /etc/apt/keyrings
+          sudo gpg --dearmor -o /etc/apt/keyrings/middleclick-autoscroll.gpg < pages/KEY.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] file://$PWD/pages/deb ./" \
+            | sudo tee /etc/apt/sources.list.d/middleclick-autoscroll.list
+          sudo apt-get update
+          sudo apt-get install -y middleclick-autoscroll
+          middleclick-autoscroll --version
+          middleclick-autoscroll list
+
+      - uses: actions/upload-artifact@v7
+        if: inputs.dry_run
+        with:
+          name: pages
+          path: pages
+          include-hidden-files: true
+
+      - name: Push them
+        if: steps.key.outputs.present == 'yes' && !inputs.dry_run
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -154,3 +211,31 @@ jobs:
           git diff --quiet --cached && { echo "nothing changed"; exit 0; }
           git commit -q -m "Publish ${{ github.ref_name }}"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:gh-pages
+
+  verify-dnf:
+    name: Install from the RPM repository
+    needs: publish
+    if: inputs.dry_run
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: pages
+          path: pages
+
+      - name: Install from the repository that was just built
+        run: |
+          rpm --import pages/KEY.gpg
+          cat > /etc/yum.repos.d/middleclick-autoscroll.repo <<EOF
+          [middleclick-autoscroll]
+          name=middleclick-autoscroll
+          baseurl=file://$PWD/pages/rpm
+          enabled=1
+          gpgcheck=1
+          repo_gpgcheck=1
+          gpgkey=file://$PWD/pages/KEY.gpg
+          EOF
+          dnf install -y middleclick-autoscroll
+          middleclick-autoscroll --version
+          middleclick-autoscroll list
