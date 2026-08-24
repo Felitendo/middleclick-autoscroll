@@ -63,12 +63,22 @@ gpg --armor --export-secret-keys 'middleclick-autoscroll repository' \
     | gh secret set GPG_PRIVATE_KEY
 ```
 
-Then, in the repository settings, set **Pages** to deploy from a branch and
-pick `gh-pages` at the root. The branch is created by the first release that
-runs with the key in place.
-
 Without the secret the workflow still builds both packages and attaches them to
 the release; it says so in the log and leaves the repositories alone.
+
+## Pointing Pages at it, once — and in this order
+
+The `gh-pages` branch does not exist until a release has put something on it,
+and a branch that does not exist cannot be picked in the Pages settings. So:
+
+1. Set the secret, above.
+2. Tag a release. The workflow creates the branch and fills it.
+3. *Then* set **Pages** to deploy from a branch and pick `gh-pages` at the
+   root.
+
+Doing it the other way round is a wall, and leaving Pages pointed at `main`
+serves the source tree at the address the install instructions name — the key
+and the indexes are 404 and nothing installs.
 
 ## What users end up with
 
