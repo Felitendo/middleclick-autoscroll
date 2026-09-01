@@ -102,6 +102,13 @@ Programs that start themselves at login write their own entry into
 _~/.config/autostart_ pointing straight at their binary, bypassing the menu
 entry entirely. Those are patched in place as well.
 
+Shortcuts on the desktop itself are patched in place too. Nothing in the XDG
+search path looks at that folder, so a shortcut that lives only there would
+otherwise be invisible - and Steam puts one there for every game somebody asks
+for a shortcut to. The folder's name is translated, and the name in use is read
+from _~/.config/user-dirs.dirs_ rather than guessed; the watcher is told about
+it in a drop-in written when autoscroll is turned on.
+
 # STEAM
 
 Steam's interface is CEF and supports the feature, but Steam builds the command
@@ -116,26 +123,36 @@ _~/.steam/debian-installation_ for Debian's, and the private tree of the
 sandbox for the Flatpak and the snap. All of them are looked at.
 
 Steam compares the installed files against its manifest at every start - by
-size, not by content - and restores whatever differs, so its launcher entry
-gets *-noverifyfiles*. So does its entry in _~/.config/autostart_, which Steam
-writes as soon as it is set to run at login: that entry bypasses the menu one
-entirely, and without the switch a Steam started at login spends the session in
-an update dialog. The trade-off is that Steam no longer repairs a damaged
-installation on its own; that is why Steam is a switch of its own in the
-settings.
+size and timestamp rather than by content - and restores whatever differs. So
+the patch is written to look untouched: the bytes the argument costs are taken
+back out of the script's own comments and the timestamp is put back afterwards,
+leaving a file exactly as long and exactly as old as Steam left it. A client
+that checks its files finds nothing to repair, and the argument survives
+however Steam was started - from the menu, from a game shortcut, from a
+launcher like Heroic or Lutris, from a terminal.
 
-The shortcuts Steam writes for single games carry the switch too. A game is not
-an application this program has anything to offer and none of them is listed
-under *Applications*, but starting one with Steam closed is a Steam start like
-any other, and without the switch it costs the interface its autoscroll for the
-rest of the session.
+That is what has to work, because there is no way to make every possible way of
+starting Steam carry an argument. *-noverifyfiles* is the second line rather
+than the first: it covers the case where the script has no comments left to pay
+for the argument and the patch has to grow the file. It goes on Steam's
+launcher entry, on its entry in _~/.config/autostart_, which Steam writes as
+soon as it is set to run at login, and on the shortcuts Steam writes for single
+games, on the desktop and in the menu alike. A game is not an application this
+program has anything to offer and none of them is listed under *Applications*,
+but starting one is a Steam start like any other. The trade-off of the switch
+is that Steam no longer repairs a damaged installation on its own; that is why
+Steam is a switch of its own in the settings.
 
-Starting Steam some other way - from a terminal, from a script - leaves the
-switch out, and Steam puts its own copy of the script back for that session.
-The patch returns at the next apply with Steam closed. It is deliberately not
-repeated while the client is running: the two would only undo each other, and
-the helper is started once, at the start, so it would not help that session
-anyway.
+A patch that does change the size is still held back while the client is
+running: Steam puts its own copy back, the two would only undo each other, and
+the helper is started once, at the start, so patching again would not help that
+session anyway. It goes in at the next apply with Steam closed. A patch that
+keeps the size has nothing to wait for and goes in either way.
+
+A client update brings a new version of the script. The watcher notices and
+patches it again, and the copy kept for undoing is replaced with the new
+version at the same time, so undoing puts back the script Steam last shipped
+rather than the one from before the update.
 
 # SPOTIFY
 

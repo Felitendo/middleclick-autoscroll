@@ -99,17 +99,6 @@ mca_desktop_dirs() {
 	)
 }
 
-# mca_desktop_get <file> <key>
-# A single value from the [Desktop Entry] group. Desktop Action groups repeat
-# the same keys, and reading past the first group would pick up the wrong one.
-mca_desktop_get() {
-	local file="$1" key="$2"
-	awk -v key="$key" '
-		/^[[:space:]]*\[/ { inentry = ($0 ~ /^[[:space:]]*\[Desktop Entry\][[:space:]]*$/); next }
-		inentry && index($0, key "=") == 1 { print substr($0, length(key) + 2); exit }
-	' "$file" 2>/dev/null
-}
-
 # _mca_desktop_read <file>
 # Every key the scan needs, in one pass and without a single fork. There are a
 # couple of hundred desktop entries on an ordinary system, and doing this with
@@ -231,8 +220,22 @@ mca_exec_is_steam_link() {
 	local line="$1" prog="$2"
 
 	[[ $line == *steam://* ]] || return 1
+	mca_prog_is_steam "$prog"
+}
+
+# mca_prog_is_steam <program>
+# Whether running this program starts the Steam client. Every packaging is in
+# here and every name Valve and the distributions give the launcher, because
+# the answer decides whether an entry gets Steam's own switch - and an entry
+# that starts Steam without it undoes the web helper patch on the way up.
+#
+# The program is what a scan leaves behind: an absolute path for a native
+# install, flatpak:<id> or snap:<name> for the other two.
+mca_prog_is_steam() {
+	local prog="$1"
+
 	case "${prog##*/}" in
-		steam|steam-runtime) return 0 ;;
+		steam|steam-runtime|steam-native|steam-jupiter) return 0 ;;
 	esac
 	[[ $prog == flatpak:com.valvesoftware.Steam || $prog == snap:steam ]]
 }
@@ -580,6 +583,8 @@ MCA_PACKAGING=()  # native | flatpak | snap
 # kept at all: the Steam module gives them Steam's own switch.
 MCA_STEAM_LINKS=()       # desktop file id
 MCA_STEAM_LINK_FILES=()  # the entry that is in effect for it
+MCA_STEAM_LINK_PACK=()   # native | flatpak | snap, which decides where the
+                         # switch goes on the command line
 
 # A scan reads every desktop entry on the system, so the menu does it once and
 # then redraws from what it found. Applying rescans on its own, so nothing else
@@ -598,7 +603,7 @@ mca_scan() {
 
 	MCA_IDS=(); MCA_FILES=(); MCA_NAMES=(); MCA_PROGS=(); MCA_KINDS=()
 	MCA_PACKAGING=()
-	MCA_STEAM_LINKS=(); MCA_STEAM_LINK_FILES=()
+	MCA_STEAM_LINKS=(); MCA_STEAM_LINK_FILES=(); MCA_STEAM_LINK_PACK=()
 
 	# Pass one: read the entries and work out what each of them starts. No
 	# detection yet - that needs a stat per program, and those are collected so
@@ -641,6 +646,13 @@ mca_scan() {
 			if mca_exec_is_steam_link "$exec_line" "$prog"; then
 				MCA_STEAM_LINKS+=("$id")
 				MCA_STEAM_LINK_FILES+=("$file")
+				if [[ $prog == flatpak:* ]]; then
+					MCA_STEAM_LINK_PACK+=(flatpak)
+				elif [[ $prog == snap:* ]]; then
+					MCA_STEAM_LINK_PACK+=(snap)
+				else
+					MCA_STEAM_LINK_PACK+=(native)
+				fi
 				continue
 			fi
 
@@ -664,10 +676,13 @@ mca_scan() {
 		packaging=native
 
 		if [[ $prog == flatpak:* ]]; then
-			prog="${prog#flatpak:}"
 			packaging=flatpak
-			mca_flatpak_is_chromium "$prog" \
-				&& { (( c_browser[i] )) && kind=browser || kind=app; }
+			if mca_prog_is_steam "$prog"; then
+				kind=steam
+			elif mca_flatpak_is_chromium "${prog#flatpak:}"; then
+				(( c_browser[i] )) && kind=browser || kind=app
+			fi
+			prog="${prog#flatpak:}"
 		elif [[ $prog == snap:* ]]; then
 			prog="${prog#snap:}"
 			packaging=snap
@@ -676,7 +691,7 @@ mca_scan() {
 			elif mca_snap_is_chromium "$prog"; then
 				(( c_browser[i] )) && kind=browser || kind=app
 			fi
-		elif [[ ${prog##*/} == steam || ${prog##*/} == steam-runtime ]]; then
+		elif mca_prog_is_steam "$prog"; then
 			# Steam is Chromium inside, but nothing about it can be changed
 			# from a command line argument; it has its own module.
 			kind=steam

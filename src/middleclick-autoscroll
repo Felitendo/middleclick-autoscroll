@@ -119,8 +119,12 @@ mca_do_apply() {
 		mca_ok "$(mca_msg "Already applied to %d applications." "$MCA_N_ON")"
 	fi
 
-	if [[ $CFG_WATCH == yes ]] && mca_watch_available && ! mca_watch_enabled; then
-		mca_watch_enable || true
+	if [[ $CFG_WATCH == yes ]] && mca_watch_available; then
+		if mca_watch_enabled; then
+			mca_watch_refresh
+		else
+			mca_watch_enable || true
+		fi
 	elif [[ $CFG_WATCH != yes ]] && mca_watch_enabled; then
 		mca_watch_disable
 	fi

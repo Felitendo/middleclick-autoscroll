@@ -93,7 +93,7 @@ mca_apply() {
 				mca_desktop_apply "$id" "$file"
 				;;
 			steam)
-				mca_steam_desktop_apply "$id" "$file"
+				mca_steam_desktop_apply "$id" "$file" "$packaging"
 				if (( ! steam_done )); then
 					mca_steam_apply
 					steam_done=1
@@ -115,7 +115,8 @@ mca_apply() {
 	# autoscroll for the rest of the session.
 	if [[ $CFG_STEAM == yes ]]; then
 		for i in "${!MCA_STEAM_LINKS[@]}"; do
-			mca_steam_desktop_apply "${MCA_STEAM_LINKS[i]}" "${MCA_STEAM_LINK_FILES[i]}"
+			mca_steam_desktop_apply "${MCA_STEAM_LINKS[i]}" \
+				"${MCA_STEAM_LINK_FILES[i]}" "${MCA_STEAM_LINK_PACK[i]}"
 		done
 	fi
 
@@ -125,6 +126,14 @@ mca_apply() {
 	if [[ $CFG_AUTOSTART == yes || $CFG_STEAM == yes ]]; then
 		mca_autostart_apply
 	fi
+
+	# Shortcuts on the desktop itself. Nothing above has seen them - the XDG
+	# search path does not go there - and a game started from one starts Steam
+	# without its switch, which is the difference between autoscroll working
+	# and autoscroll working most of the time. Each entry is gated on its own,
+	# so there is nothing to check out here.
+	mca_shortcuts_apply
+
 	[[ $CFG_SPOTIFY == yes ]] && mca_spotify_apply
 
 	mca_prune_orphans
@@ -161,6 +170,12 @@ mca_revert() {
 MCA_UNIT_PATH="middleclick-autoscroll.path"
 MCA_UNIT_SERVICE="middleclick-autoscroll.service"
 
+# The desktop folder is watched like every other directory an entry can turn up
+# in, but its name is translated and the unit that ships with the package
+# cannot know it. So that one path is written here, into a drop-in, from the
+# name this system actually uses.
+MCA_UNIT_DROPIN="${MCA_XDG_CONFIG}/systemd/user/${MCA_UNIT_PATH}.d"
+
 mca_watch_available() {
 	mca_have systemctl && [[ -n ${XDG_RUNTIME_DIR:-} || -S "/run/user/$(id -u)/bus" ]]
 }
@@ -170,10 +185,48 @@ mca_watch_enabled() {
 	systemctl --user is-enabled --quiet "$MCA_UNIT_PATH" 2>/dev/null
 }
 
+# _mca_watch_dropin_write
+# Returns 0 when the drop-in changed and systemd has to be told, 1 when it was
+# already right - the same contract as mca_write_if_changed, and for the same
+# reason: the watcher runs after every desktop entry that appears anywhere on
+# the system, and a daemon-reload each time would be absurd.
+_mca_watch_dropin_write() {
+	local dir file="$MCA_UNIT_DROPIN/desktop.conf" content
+
+	dir="$(mca_desktop_folder)"
+	[[ -d $dir ]] || { _mca_watch_dropin_remove; return $?; }
+
+	# A per cent sign starts a specifier in a unit file and has to be doubled
+	# to mean itself. Rare in a folder name, fatal when it happens.
+	content="[Path]"$'\n'"PathModified=${dir//%/%%}"$'\n'
+
+	mca_write_if_changed "$file" "$content"
+}
+
+_mca_watch_dropin_remove() {
+	[[ -e "$MCA_UNIT_DROPIN/desktop.conf" ]] || return 1
+	rm -f -- "$MCA_UNIT_DROPIN/desktop.conf"
+	rmdir "$MCA_UNIT_DROPIN" 2>/dev/null || true
+	return 0
+}
+
 mca_watch_enable() {
 	mca_watch_available || return 1
+	_mca_watch_dropin_write
+	systemctl --user daemon-reload > /dev/null 2>&1 || true
 	systemctl --user enable --now "$MCA_UNIT_PATH" > /dev/null 2>&1 || return 1
 	systemctl --user enable "$MCA_UNIT_SERVICE" > /dev/null 2>&1 || true
+	return 0
+}
+
+# mca_watch_refresh
+# Keeps a running watcher in step with a desktop folder that has been renamed,
+# which is what a change of session language does to it.
+mca_watch_refresh() {
+	mca_watch_available || return 0
+	_mca_watch_dropin_write || return 0
+	systemctl --user daemon-reload > /dev/null 2>&1 || true
+	systemctl --user restart "$MCA_UNIT_PATH" > /dev/null 2>&1 || true
 	return 0
 }
 
@@ -181,6 +234,7 @@ mca_watch_disable() {
 	mca_watch_available || return 0
 	systemctl --user disable --now "$MCA_UNIT_PATH" > /dev/null 2>&1 || true
 	systemctl --user disable "$MCA_UNIT_SERVICE" > /dev/null 2>&1 || true
+	_mca_watch_dropin_remove && systemctl --user daemon-reload > /dev/null 2>&1
 	return 0
 }
 

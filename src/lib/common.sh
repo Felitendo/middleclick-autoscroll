@@ -44,6 +44,29 @@ MCA_BACKUPDIR="${MCA_STATEDIR}/backup"
 # else. See mca_ledger_add.
 MCA_LEDGER="${MCA_STATEDIR}/ledger"
 
+# The folder the desktop itself shows. Nothing in the XDG search path looks at
+# it, so an entry that lives only there is invisible to a scan - and a game
+# shortcut dragged onto the desktop is exactly that.
+#
+# Its name is translated: Schreibtisch, Bureau, Escritorio. The name in use is
+# in the file xdg-user-dirs writes, so it is read rather than guessed, and
+# ~/Desktop is only the fallback for a system that has no such file.
+mca_desktop_folder() {
+	local file="$MCA_XDG_CONFIG/user-dirs.dirs" line dir=''
+
+	if [[ -r $file ]]; then
+		while IFS= read -r line; do
+			[[ $line == XDG_DESKTOP_DIR=* ]] || continue
+			dir="${line#XDG_DESKTOP_DIR=}"
+			dir="${dir%\"}"; dir="${dir#\"}"
+		done < "$file"
+		dir="${dir/#\$HOME/$HOME}"
+	fi
+
+	[[ $dir == /* ]] || dir="$HOME/Desktop"
+	printf '%s\n' "${dir%/}"
+}
+
 # ---------------------------------------------------------------------------
 # Translations
 # ---------------------------------------------------------------------------

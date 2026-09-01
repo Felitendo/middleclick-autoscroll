@@ -23,12 +23,18 @@ PathModified=/run/current-system/sw/share/applications
 PathModified=%h/.nix-profile/share/applications
 PathModified=%h/.guix-profile/share/applications
 
+# The desktop folder is watched too - Steam writes a shortcut there for every
+# game somebody asks for one, and starting a game is a Steam start - but its
+# name is translated and cannot be written down here. `enable` adds it in a
+# drop-in, from the name this system uses.
+
 # Steam replaces the script that starts its interface on every client update,
 # which takes the patch with it. Where that installation lives depends on how
 # Steam was installed.
 PathChanged=%h/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 PathChanged=%h/.steam/debian-installation/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 PathChanged=%h/.var/app/com.valvesoftware.Steam/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
+PathChanged=%h/.var/app/com.valvesoftware.Steam/data/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 PathChanged=%h/snap/steam/common/.local/share/Steam/ubuntu12_64/steamwebhelper_sniper_wrap.sh
 
 Unit=middleclick-autoscroll.service

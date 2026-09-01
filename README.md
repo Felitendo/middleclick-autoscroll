@@ -73,9 +73,17 @@ same thing manually.
 ## Steam
 
 Steam's web UI supports autoscroll but has no way to pass extra arguments to its
-helper. The program patches the helper launch script and adds `-noverifyfiles`
-to Steam's launcher so the patch sticks. That means Steam won't auto-repair
-damaged files on its own — you can turn this off separately in the settings.
+helper, so the program patches the script that starts it. Steam checks its own
+files at every start and repairs whatever looks changed, so the patch is written
+to look unchanged: the bytes the argument costs come back out of the script's
+comments and the timestamp is restored, leaving a file exactly as long and as old
+as Steam left it. It survives however you start Steam — the menu, a desktop
+shortcut, a game launcher, a terminal.
+
+As a fallback, for the case where that isn't possible, `-noverifyfiles` goes on
+everything that starts Steam: its launcher, its autostart entry, and the
+shortcuts it writes for single games. That one means Steam won't auto-repair
+damaged files on its own — you can turn it off separately in the settings.
 
 ## Commands
 

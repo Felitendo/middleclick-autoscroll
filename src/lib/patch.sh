@@ -349,51 +349,117 @@ mca_desktop_apply() {
 }
 
 # ---------------------------------------------------------------------------
-# Autostart entries
+# Entries outside the search path
 # ---------------------------------------------------------------------------
-# Applications that start themselves at login write their own entry into
-# ~/.config/autostart, pointing straight at their binary. Those bypass the
-# desktop entry in the menu completely, which is why Discord launched at login
-# used to behave differently from Discord launched from the menu.
+# Two directories hold desktop entries that no part of the XDG search path
+# looks at, so nothing the scan does can reach them:
 #
-# Steam is here too, even though it is not a Chromium process itself: its entry
-# needs -noverifyfiles exactly like the menu one, and it is the entry most
-# likely to exist, because Steam writes it as soon as "run at startup" is
-# ticked. Without it, a Steam started at login restores the patched web helper
-# script and the watcher patches it back, over and over.
+#   ~/.config/autostart, where applications that start themselves at login
+#   write their own entry, pointing straight at their binary. Those bypass the
+#   entry in the menu completely, which is why Discord launched at login used
+#   to behave differently from Discord launched from the menu.
+#
+#   The desktop folder, where a shortcut somebody dragged out of the menu -
+#   or asked Steam for - lives and nowhere else.
+#
+# Steam is in both, even though it is not a Chromium process itself: its
+# entries need -noverifyfiles exactly like the menu one. The autostart entry is
+# the one most likely to exist, because Steam writes it as soon as "run at
+# startup" is ticked; without it a Steam started at login restores the patched
+# web helper script and the watcher patches it back, over and over. The desktop
+# ones are the gap behind "autoscroll works, except sometimes": starting a game
+# from the desktop is a Steam start like any other, and a Steam start without
+# the switch costs the interface its autoscroll for the rest of the session.
+#
+# Neither can be shadowed from anywhere, so both are edited where they stand,
+# with the original kept.
+
+# _mca_entry_patch_inplace <file> <gate: autostart|apps>
+# One desktop entry that lives outside the XDG search path, edited where it is
+# because there is nowhere to shadow it from.
+#
+# Anything that starts Steam gets Steam's own switch; a Chromium application
+# gets the flag. What decides whether a Chromium application here is in scope
+# differs by where the entry came from, which is what the gate says: an
+# autostart entry follows the autostart setting, a shortcut follows the same
+# rules as the application it is a shortcut to.
+_mca_entry_patch_inplace() {
+	local file="$1" gate="$2"
+	local id prog packaging=native content backup kind
+
+	grep -q "^$MCA_MARK_INPLACE=" "$file" 2>/dev/null && return 0
+
+	_mca_desktop_read "$file"
+	[[ -n $DE_EXEC ]] || return 0
+	[[ $DE_HIDDEN == true ]] && return 0
+
+	mca_exec_program "$DE_EXEC" || return 0
+	prog="$MCA_PROG"
+
+	# A Flatpak or a snap entry names the wrapper rather than the application.
+	# The scan resolves those into an id; outside the scan the same has to
+	# happen here, or every Flatpak looks like the flatpak program itself.
+	if [[ ${prog##*/} == flatpak ]]; then
+		mca_exec_flatpak_id "$DE_EXEC" || return 0
+		prog="flatpak:$MCA_PROG"
+		packaging=flatpak
+	elif mca_snap_name "$prog"; then
+		prog="snap:$MCA_PROG"
+		packaging=snap
+	fi
+
+	if mca_prog_is_steam "$prog"; then
+		[[ $CFG_STEAM == yes ]] || return 0
+		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
+			"$MCA_STEAM_LAUNCH_FLAG" "$(mca_steam_flag_position "$packaging")")"
+	else
+		case "$packaging" in
+			flatpak) mca_flatpak_is_chromium "${prog#flatpak:}" || return 0 ;;
+			snap)    mca_snap_is_chromium "${prog#snap:}" || return 0 ;;
+			*)       mca_is_chromium "$prog" || return 0 ;;
+		esac
+
+		if [[ $gate == autostart ]]; then
+			[[ $CFG_AUTOSTART == yes ]] || return 0
+		else
+			id="${file##*/}"; id="${id%.desktop}"
+			mca_desktop_is_browser && kind=browser || kind=app
+			mca_kind_wanted "$kind" "$id" "$packaging" || return 0
+		fi
+
+		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
+	fi
+
+	[[ -n $content ]] || return 0
+	[[ "$content" == "$(< "$file")" ]] && return 0
+
+	backup="$(mca_backup "$file")" || return 0
+	if mca_write_if_changed "$file" "$content"$'\n'; then
+		MCA_CHANGES=$(( MCA_CHANGES + 1 ))
+	fi
+	mca_ledger_add inplace "$file" "$backup"
+}
 
 mca_autostart_apply() {
-	local dir="$MCA_XDG_CONFIG/autostart" file exec_line prog content backup
+	local dir="$MCA_XDG_CONFIG/autostart" file
 
 	[[ -d $dir ]] || return 0
 
 	for file in "$dir"/*.desktop; do
 		[[ -f $file ]] || continue
-		grep -q "^$MCA_MARK_INPLACE=" "$file" 2>/dev/null && continue
+		_mca_entry_patch_inplace "$file" autostart
+	done
+}
 
-		exec_line="$(mca_desktop_get "$file" Exec)"
-		[[ -n $exec_line ]] || continue
+mca_shortcuts_apply() {
+	local dir file
+	dir="$(mca_desktop_folder)"
 
-		mca_exec_program "$exec_line" || continue
-		prog="$MCA_PROG"
+	[[ -d $dir ]] || return 0
 
-		if [[ ${prog##*/} == steam || ${prog##*/} == steam-runtime ]]; then
-			[[ $CFG_STEAM == yes ]] || continue
-			content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
-				"$MCA_STEAM_LAUNCH_FLAG" after-program)"
-		else
-			[[ $CFG_AUTOSTART == yes ]] || continue
-			mca_is_chromium "$prog" || continue
-			content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
-		fi
-		[[ -n $content ]] || continue
-		[[ "$content" == "$(< "$file")" ]] && continue
-
-		backup="$(mca_backup "$file")" || continue
-		if mca_write_if_changed "$file" "$content"$'\n'; then
-			MCA_CHANGES=$(( MCA_CHANGES + 1 ))
-		fi
-		mca_ledger_add inplace "$file" "$backup"
+	for file in "$dir"/*.desktop; do
+		[[ -f $file ]] || continue
+		_mca_entry_patch_inplace "$file" apps
 	done
 }
 
@@ -446,13 +512,15 @@ mca_spotify_apply() {
 # ---------------------------------------------------------------------------
 
 # mca_prune_orphans
-# Removes generated entries whose application is gone.
+# Forgets changes there is no longer anything to undo.
 #
 # Uninstalling something deletes its entry from /usr/share/applications, but the
 # copy shadowing it is in the user's home and pacman knows nothing about it. It
 # would sit in the menu forever, offering to start a program that is no longer
 # installed - and the watcher would not notice, because a plain apply only ever
-# looks at what is there now.
+# looks at what is there now. A file that was edited where it stood and has
+# since been deleted is the same problem from the other side: its record would
+# have `disable` put the file back.
 mca_prune_orphans() {
 	local kind path source line
 	local -a lines=()
@@ -462,6 +530,17 @@ mca_prune_orphans() {
 
 	for line in "${lines[@]}"; do
 		IFS=$'\t' read -r kind path source <<< "$line"
+
+		# An entry that was edited where it stood and has since been deleted -
+		# a game shortcut dragged to the wastebasket, an autostart entry the
+		# application removed. There is nothing left to put back, and keeping
+		# the record would have `disable` recreate a file the user threw away.
+		if [[ $kind == inplace && ! -e $path ]]; then
+			[[ -n $source ]] && rm -f -- "$MCA_BACKUPDIR/$source"
+			mca_ledger_forget "$path"
+			continue
+		fi
+
 		[[ $kind == shadow && -n $source ]] || continue
 		[[ -e $source ]] && continue
 
