@@ -1,15 +1,13 @@
 # middleclick-autoscroll
 
-Middle-click autoscroll for Linux. Hold the middle mouse button, move the
-mouse, the page scrolls — like on Windows. Works with browsers, Electron apps,
-Flatpaks, snaps, Steam, and anything else that runs on Chromium under the hood.
+Middle-click autoscroll is a CLI for Linux that enables autoscroll in every application that supports it.
+Works with browsers, Electron apps like Discord and Spotify, Steam, and anything else that runs on Chromium under the hood.
 
-No app list to maintain. The program looks at what's actually installed, figures
-out what's Chromium-based, and handles it.
+There is no app list. My tool just looks at what uses chromium under the hood and applies the necessary steps to get it working.
 
-## Installing
+## How to install
 
-**Arch, CachyOS, EndeavourOS, Manjaro**
+**Arch, CachyOS, SteamOS, and all the other arch derivatives**
 
 ```bash
 paru -S middleclick-autoscroll
