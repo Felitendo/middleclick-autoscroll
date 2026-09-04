@@ -223,6 +223,46 @@ mca_exec_is_steam_link() {
 	mca_prog_is_steam "$prog"
 }
 
+# _mca_prog_is_steam_name <program>
+# The launcher under one of the names Valve and the distributions give it.
+_mca_prog_is_steam_name() {
+	case "${1##*/}" in
+		steam|steam-runtime|steam-native|steam-jupiter) return 0 ;;
+	esac
+	return 1
+}
+
+# _mca_prog_is_steam_wrapper <program>
+# Whether a script in front of the client is a way of starting Steam. People
+# put one there to add a switch of their own, and an entry pointing at it is a
+# Steam start like any other - but the script is not named after Steam, so
+# nothing above recognises it.
+#
+# Getting this wrong is worse than it sounds: such a script tends to mention
+# the flag it is there to add, which is one of the markers that say "Chromium"
+# to the hint scan. The entry then ends up being handled as an application and
+# is given the flag on its command line, where Steam ignores it, instead of
+# being handed to the Steam module that knows how to reach the web helper.
+#
+# Only the handover is followed, and only one step of it: the client's own
+# launcher is already recognised by name, so a wrapper in front of it is the
+# whole of what is left.
+_mca_prog_is_steam_wrapper() {
+	local prog="$1" head='' target
+
+	[[ $prog == /* && -f $prog && -r $prog ]] || return 1
+
+	# Two characters, read in the shell: the scan asks this about every program
+	# on the system, and most of them are binaries whose first line is the whole
+	# file.
+	read -r -N 2 head < "$prog" 2>/dev/null || return 1
+	[[ $head == '#!' ]] || return 1
+
+	target="$(_mca_script_target "$prog")" || return 1
+	[[ -n $target ]] || return 1
+	_mca_prog_is_steam_name "$target"
+}
+
 # mca_prog_is_steam <program>
 # Whether running this program starts the Steam client. Every packaging is in
 # here and every name Valve and the distributions give the launcher, because
@@ -234,10 +274,9 @@ mca_exec_is_steam_link() {
 mca_prog_is_steam() {
 	local prog="$1"
 
-	case "${prog##*/}" in
-		steam|steam-runtime|steam-native|steam-jupiter) return 0 ;;
-	esac
-	[[ $prog == flatpak:com.valvesoftware.Steam || $prog == snap:steam ]]
+	_mca_prog_is_steam_name "$prog" && return 0
+	[[ $prog == flatpak:com.valvesoftware.Steam || $prog == snap:steam ]] && return 0
+	_mca_prog_is_steam_wrapper "$prog"
 }
 
 # ---------------------------------------------------------------------------
