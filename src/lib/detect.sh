@@ -615,16 +615,6 @@ MCA_PROGS=()      # resolved program, or a Flatpak app id or a snap name
 MCA_KINDS=()      # app | browser | steam | unknown | no
 MCA_PACKAGING=()  # native | flatpak | snap
 
-# The shortcuts Steam writes for single games. Not applications of their own - a
-# game is whatever engine it was built with, and none of those reads a Chromium
-# argument - so they are kept apart from the list rather than listed as
-# something that got switched on. They do start Steam, which is why they are
-# kept at all: the Steam module gives them Steam's own switch.
-MCA_STEAM_LINKS=()       # desktop file id
-MCA_STEAM_LINK_FILES=()  # the entry that is in effect for it
-MCA_STEAM_LINK_PACK=()   # native | flatpak | snap, which decides where the
-                         # switch goes on the command line
-
 # A scan reads every desktop entry on the system, so the menu does it once and
 # then redraws from what it found. Applying rescans on its own, so nothing else
 # has to remember to invalidate this.
@@ -642,7 +632,6 @@ mca_scan() {
 
 	MCA_IDS=(); MCA_FILES=(); MCA_NAMES=(); MCA_PROGS=(); MCA_KINDS=()
 	MCA_PACKAGING=()
-	MCA_STEAM_LINKS=(); MCA_STEAM_LINK_FILES=(); MCA_STEAM_LINK_PACK=()
 
 	# Pass one: read the entries and work out what each of them starts. No
 	# detection yet - that needs a stat per program, and those are collected so
@@ -682,18 +671,12 @@ mca_scan() {
 				prog="snap:$MCA_PROG"
 			fi
 
-			if mca_exec_is_steam_link "$exec_line" "$prog"; then
-				MCA_STEAM_LINKS+=("$id")
-				MCA_STEAM_LINK_FILES+=("$file")
-				if [[ $prog == flatpak:* ]]; then
-					MCA_STEAM_LINK_PACK+=(flatpak)
-				elif [[ $prog == snap:* ]]; then
-					MCA_STEAM_LINK_PACK+=(snap)
-				else
-					MCA_STEAM_LINK_PACK+=(native)
-				fi
-				continue
-			fi
+			# The shortcuts Steam writes for single games are not
+			# applications of their own - a game is whatever engine it was
+			# built with, and none of those reads a Chromium argument - and
+			# starting the client through one needs nothing on its command
+			# line either.
+			mca_exec_is_steam_link "$exec_line" "$prog" && continue
 
 			c_ids+=("$id"); c_files+=("$file"); c_names+=("$name")
 			c_progs+=("$prog")

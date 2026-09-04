@@ -122,13 +122,18 @@ same thing manually.
 
 Steam's web UI supports autoscroll but has no way to pass extra arguments to its
 helper, so the program patches the script that starts it. Steam checks its own
-files at every start and repairs whatever looks changed, so the patch is written
-to look unchanged.
+files against its manifest - by size and timestamp - and reinstalls the whole
+client package over anything that differs, so the patch is written to look
+unchanged: the bytes the argument costs are taken back out of the script's
+comments and the timestamp is put back.
 
-As a fallback, for the case where that isn't possible, `-noverifyfiles` goes on
-everything that starts Steam: its launcher, its autostart entry, and the
-shortcuts it writes for single games. That one means Steam won't auto-repair
-damaged files on its own just so you're aware of that.
+If that can't be done - a script with no comments left to pay for the argument,
+or one this version doesn't recognise - nothing is written and Steam is left
+alone. A file of the wrong length costs the client package downloaded and
+installed again, and a Steam that quits at the end of it instead of coming up;
+no autoscroll in Steam is the smaller problem. Nothing is added to Steam's
+launcher entry or to the shortcuts it writes for games, and Steam keeps
+repairing its own installation.
 
 ## Commands
 

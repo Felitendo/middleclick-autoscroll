@@ -56,10 +56,6 @@ mca_do_enable() {
 
 	mca_ok "$(mca_msg "Autoscroll is on for %d applications." "$MCA_N_ON")"
 
-	if [[ $CFG_STEAM == yes ]] && mca_steam_installed; then
-		mca_note "$(mca_msg "Steam's launcher now skips its file check, which is what keeps the change from being undone at every start.")"
-	fi
-
 	mca_note "$(mca_msg "Applications that are already running pick this up when they are restarted.")"
 }
 

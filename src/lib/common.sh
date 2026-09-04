@@ -45,10 +45,14 @@ MCA_BROWSER_FLAG="--enable-features=MiddleClickAutoscroll,HeliumMiddleClickAutos
 MCA_FEATURE="MiddleClickAutoscroll"
 MCA_BROWSER_FEATURES="MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
 
-# Bumped when the flags above change. An installation that was set up by a
-# version with a different answer is taken back and done again once, because a
-# file that is already patched is otherwise left alone. See mca_apply.
-MCA_FLAG_SCHEME=2
+# Bumped when the flags above change, and when what gets written where does.
+# An installation that was set up by a version with a different answer is taken
+# back and done again once, because a file that is already patched is otherwise
+# left alone. See mca_apply.
+#
+# 3 is what takes -noverifyfiles back out of the Steam entries an older version
+# put it in.
+MCA_FLAG_SCHEME=3
 
 MCA_LIBDIR="${MCA_LIBDIR:-@LIBDIR@}"
 MCA_LOCALEDIR="${MCA_LOCALEDIR:-@LOCALEDIR@}"

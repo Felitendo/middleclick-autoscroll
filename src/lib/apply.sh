@@ -103,7 +103,9 @@ mca_apply() {
 				mca_desktop_apply "$id" "$file" "$(mca_flags "$kind")"
 				;;
 			steam)
-				mca_steam_desktop_apply "$id" "$file" "$packaging"
+				# Nothing is done to the entry itself: what Steam needs is
+				# in its own installation, and the same patch serves every
+				# way of starting the client.
 				if (( ! steam_done )); then
 					mca_steam_apply
 					steam_done=1
@@ -118,30 +120,16 @@ mca_apply() {
 		mca_steam_apply
 	fi
 
-	# The shortcuts Steam writes for single games. They are not applications
-	# and are not offered as ones, but starting a game with Steam closed is a
-	# Steam start like any other: without the switch the client finds the
-	# patched helper script, puts its own back, and the interface loses
-	# autoscroll for the rest of the session.
-	if [[ $CFG_STEAM == yes ]]; then
-		for i in "${!MCA_STEAM_LINKS[@]}"; do
-			mca_steam_desktop_apply "${MCA_STEAM_LINKS[i]}" \
-				"${MCA_STEAM_LINK_FILES[i]}" "${MCA_STEAM_LINK_PACK[i]}"
-		done
-	fi
-
-	# Steam's autostart entry carries Steam's own switch and follows the Steam
-	# setting, not this one - leaving it out while Steam is patched is what puts
-	# the client in an update loop - so both are checked inside.
-	if [[ $CFG_AUTOSTART == yes || $CFG_STEAM == yes ]]; then
+	# Autostart entries. A Chromium application that starts itself at login
+	# points straight at its binary and never reads the entry in the menu, so
+	# Discord at login used to behave differently from Discord from the menu.
+	if [[ $CFG_AUTOSTART == yes ]]; then
 		mca_autostart_apply
 	fi
 
-	# Shortcuts on the desktop itself. Nothing above has seen them - the XDG
-	# search path does not go there - and a game started from one starts Steam
-	# without its switch, which is the difference between autoscroll working
-	# and autoscroll working most of the time. Each entry is gated on its own,
-	# so there is nothing to check out here.
+	# Shortcuts on the desktop itself, which nothing above has seen: the XDG
+	# search path does not go there. Each entry is gated on its own, so there is
+	# nothing to check out here.
 	mca_shortcuts_apply
 
 	[[ $CFG_SPOTIFY == yes ]] && mca_spotify_apply

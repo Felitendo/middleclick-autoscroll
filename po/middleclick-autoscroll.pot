@@ -43,9 +43,6 @@ msgstr ""
 msgid "not patched yet"
 msgstr ""
 
-msgid "waiting until Steam is closed"
-msgstr ""
-
 
 #. Status block
 msgid "Autoscroll"
@@ -155,9 +152,6 @@ msgstr ""
 msgid "Applications that are already running pick this up when they are restarted."
 msgstr ""
 
-msgid "Steam's launcher now skips its file check, which is what keeps the change from being undone at every start."
-msgstr ""
-
 msgid "Could not start the watcher for newly installed applications."
 msgstr ""
 
@@ -179,10 +173,10 @@ msgstr ""
 msgid "Already applied to %d applications."
 msgstr ""
 
-msgid "Steam starts its interface in a way this version does not recognise; leaving it alone."
+msgid "Steam starts its interface in a way this version cannot change without Steam noticing; leaving it alone."
 msgstr ""
 
-msgid "Steam is running and has put its own file back; the change waits until Steam is closed."
+msgid "Steam's interface cannot be given the flag without leaving a file Steam would reinstall; the change has been taken back."
 msgstr ""
 
 

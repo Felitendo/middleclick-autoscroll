@@ -18,24 +18,18 @@
 # and the flag survives however Steam was started - from the menu, from a game
 # shortcut, from a launcher like Heroic, from a terminal.
 #
-# That is the part that has to work, because there is no way to make every
-# possible way of starting Steam carry an argument. -noverifyfiles on the
-# launcher entries is the second line rather than the first: it covers the case
-# where the script has no comments left to pay for the flag and the patch has
-# to grow the file. The trade-off is real and belongs to the user, so it is a
-# switch of its own rather than part of the general application handling: with
-# verification off, Steam no longer repairs a damaged installation by itself.
-#
-# A patch that does change the size still has to stay out of the way of a
-# client that is already running, or the two programs spend the session undoing
-# each other: Steam restores the script, the watcher patches it again, Steam
-# restores it again, and the client never gets past its update dialog. A patch
-# that keeps the size is invisible to that check and goes in either way.
+# A patch that changes the length is not an option, and no switch covers for
+# one. Steam checks its files at a start it was given arguments for, but also
+# at the shutdown it runs itself - and that one has no -noverifyfiles on its
+# command line, whatever the session was started with. What a single wrong
+# length costs is the whole client package downloaded, extracted and installed
+# again, and a client that quits at the end of it instead of coming up. So the
+# flag either fits in the space the comments give back, or it is not written at
+# all: no autoscroll in the interface is a smaller thing than a client that
+# reinstalls itself.
 #
 # The file comes back on every client update, and the watcher re-applies the
 # patch when that happens.
-
-MCA_STEAM_LAUNCH_FLAG='-noverifyfiles'
 
 # Every place a Steam installation is known to live, resolved and de-duplicated
 # because ~/.steam/steam is normally a symlink into ~/.local/share.
@@ -88,24 +82,6 @@ mca_steam_installed() {
 	return 1
 }
 
-# mca_steam_running
-# Steam records its own process id beside its installation while it runs. The
-# file outlives a crash, so the id is checked rather than believed.
-mca_steam_running() {
-	local f pid
-	for f in \
-		"$HOME/.steam/steam.pid" \
-		"$HOME/.var/app/com.valvesoftware.Steam/.steam/steam.pid" \
-		"$HOME/snap/steam/common/.steam/steam.pid"
-	do
-		[[ -r $f ]] || continue
-		pid="$(< "$f")"
-		[[ $pid =~ ^[0-9]+$ ]] || continue
-		kill -0 "$pid" 2>/dev/null && return 0
-	done
-	return 1
-}
-
 # mca_steam_script_patched <script>
 mca_steam_script_patched() {
 	grep -q -- "$MCA_FEATURE" "$1" 2>/dev/null
@@ -116,26 +92,6 @@ mca_steam_patched() {
 	while IFS= read -r root; do
 		script="$(mca_steam_script "$root")" || continue
 		mca_steam_script_patched "$script" && return 0
-	done < <(mca_steam_roots)
-	return 1
-}
-
-# mca_steam_deferred <script>
-# Whether the patch is being held back rather than simply missing: the script
-# was patched before, its own copy is back, and Steam is still running. See
-# mca_steam_apply for why that is left alone.
-mca_steam_deferred() {
-	[[ -e "$MCA_BACKUPDIR/$(mca_backup_name "$1")" ]] && mca_steam_running
-}
-
-# mca_steam_waiting
-# The same question for the status screen, which has no script in hand.
-mca_steam_waiting() {
-	local root script
-	while IFS= read -r root; do
-		script="$(mca_steam_script "$root")" || continue
-		mca_steam_script_patched "$script" && continue
-		mca_steam_deferred "$script" && return 0
 	done < <(mca_steam_roots)
 	return 1
 }
@@ -154,27 +110,25 @@ _mca_steam_exec_line() {
 	' "$1" 2>/dev/null
 }
 
-# _mca_steam_build <script> <flags> <reclaim: 0|1>
+# _mca_steam_build <script> <flags>
 # The patched script on stdout: the flags appended to the line that starts the
-# web helper, and - when asked for - the same number of bytes taken back out of
-# the script's comments, so that the file Steam finds is the length Steam wrote
-# down. Everything else - setting up the container runtime, deciding whether
-# the sandbox can be used - is left alone.
+# web helper, and the same number of bytes taken back out of the script's
+# comments, so that the file Steam finds is the length Steam wrote down.
+# Everything else - setting up the container runtime, deciding whether the
+# sandbox can be used - is left alone.
 #
 # Comments are eaten from the bottom up, so the header that says what the
 # script is for is the last thing to lose anything, and the '#' itself always
 # stays: a line that loses it stops being a comment and starts being a command.
 # Fails when the comments are too short to pay for the flags.
 _mca_steam_build() {
-	local script="$1" flags="$2" reclaim="$3" lineno need=0
+	local script="$1" flags="$2" lineno need
 
 	lineno="$(_mca_steam_exec_line "$script")"
 	[[ -n $lineno ]] || return 1
 
-	if (( reclaim )); then
-		need="$(printf '%s' " $flags" | wc -c)"
-		need="${need//[^0-9]/}"
-	fi
+	need="$(printf '%s' " $flags" | wc -c)"
+	need="${need//[^0-9]/}"
 
 	# LC_ALL=C so awk counts bytes: a comment with an accent in it is shorter
 	# in characters than it is on disk, and it is the disk that Steam measures.
@@ -222,44 +176,50 @@ _mca_steam_refresh_backup() {
 	cp -p -- "$script" "$MCA_BACKUPDIR/$name" 2>/dev/null || true
 }
 
-# _mca_steam_reneutralise <script> <flags>
-# An earlier version of this program patched by appending and left the script
-# longer than Steam expects, which is a patch that only survives because
-# -noverifyfiles is there to stop Steam looking. If the same flags can be made
-# to fit, they are: the file goes back to the length and the timestamp Steam
-# wrote down and stops depending on that switch.
+# _mca_steam_settle <script> <flags>
+# The script is already patched. Whether that is a patch Steam can live with is
+# a question of length: an earlier version of this program appended the flag
+# where the comments could not pay for it, which leaves the script longer than
+# the file Steam wrote down - and a client that checks its files reinstalls
+# itself over that, then quits instead of starting.
 #
-# The new copy is built from the untouched original that was kept when the
-# script was first patched, never from the patched file - patching a patched
-# file is how a flag ends up in there twice.
-_mca_steam_reneutralise() {
+# Rebuilt from the untouched original kept when the script was first patched,
+# never from the patched file, the flag either fits this time or the original
+# goes back and Steam is left with a client it recognises.
+_mca_steam_settle() {
 	local script="$1" flags="$2" name copy out
 
 	name="$(mca_backup_name "$script")"
 	copy="$MCA_BACKUPDIR/$name"
-	[[ -f $copy ]] || return 1
 
-	# Already the length Steam expects: there is nothing to gain.
-	(( $(wc -c < "$script") == $(wc -c < "$copy") )) && return 1
+	# Nothing to compare against, so nothing can be said about the length.
+	[[ -f $copy ]] || return 0
 
-	out="$(_mca_steam_build "$copy" "$flags" 1)" || return 1
-	_mca_steam_same_size "$copy" "$out" || return 1
+	# Already the length Steam expects: the patch is a good one.
+	(( $(wc -c < "$script") == $(wc -c < "$copy") )) && return 0
 
-	if mca_write_if_changed "$script" "$out"$'\n'; then
-		MCA_CHANGES=$(( MCA_CHANGES + 1 ))
+	if out="$(_mca_steam_build "$copy" "$flags")" && _mca_steam_same_size "$copy" "$out"; then
+		if mca_write_if_changed "$script" "$out"$'\n'; then
+			MCA_CHANGES=$(( MCA_CHANGES + 1 ))
+		fi
+		chmod +x -- "$script" 2>/dev/null || true
+		touch -r "$copy" -- "$script" 2>/dev/null || true
+		mca_ledger_add steam "$script" "$name"
+		return 0
 	fi
-	chmod +x -- "$script" 2>/dev/null || true
-	touch -r "$copy" -- "$script" 2>/dev/null || true
-	mca_ledger_add steam "$script" "$name"
+
+	mca_steam_revert "$script" "$name"
+	mca_ledger_forget "$script"
+	mca_note "$(mca_msg "Steam's interface cannot be given the flag without leaving a file Steam would reinstall; the change has been taken back.")"
 	return 0
 }
 
 # mca_steam_apply
-# Puts the flags into every Steam installation that has the script, preferring
-# the patch that keeps the file's size and falling back to the one that does
-# not. Returns 1 when there is no Steam to patch at all.
+# Puts the flags into every Steam installation that has the script, and only
+# where that can be done without changing how long the file is. Returns 1 when
+# there is no Steam to patch at all.
 mca_steam_apply() {
-	local root script backup flags found=0 out neutral
+	local root script backup flags found=0 out
 
 	flags="$(mca_flags)"
 
@@ -268,35 +228,21 @@ mca_steam_apply() {
 		found=1
 
 		if mca_steam_script_patched "$script"; then
-			_mca_steam_reneutralise "$script" "$flags" || true
+			_mca_steam_settle "$script" "$flags"
 			continue
 		fi
 
 		_mca_steam_refresh_backup "$script"
 
-		neutral=1
-		if ! { out="$(_mca_steam_build "$script" "$flags" 1)" \
+		# Either the comments can pay for the flag or nothing is written.
+		# A longer file is one Steam reinstalls itself over; a client update
+		# that changed how the helper is started leaves no line to patch at
+		# all. Both end here, and this script is what starts Steam's entire
+		# interface, so leaving it alone is the only safe answer to either.
+		if ! { out="$(_mca_steam_build "$script" "$flags")" \
 			&& _mca_steam_same_size "$script" "$out"; }
 		then
-			neutral=0
-			out="$(_mca_steam_build "$script" "$flags" 0)" || {
-				# A client update changed how the helper is started. Leaving
-				# the file alone is the only safe answer: this script is what
-				# starts Steam's entire interface.
-				mca_note "$(mca_msg "Steam starts its interface in a way this version does not recognise; leaving it alone.")"
-				continue
-			}
-		fi
-
-		# The patch has to grow the file, and it is not patched now but was
-		# before: Steam has just put its own copy back. Patching it again
-		# while the client watches is what turns one size mismatch into an
-		# endless update dialog, and it would not help this session anyway -
-		# the helper is started once, at the start. The patch waits for the
-		# next apply with Steam closed. A patch that keeps the size has
-		# nothing to wait for.
-		if (( ! neutral )) && mca_steam_deferred "$script"; then
-			mca_note "$(mca_msg "Steam is running and has put its own file back; the change waits until Steam is closed.")"
+			mca_note "$(mca_msg "Steam starts its interface in a way this version cannot change without Steam noticing; leaving it alone.")"
 			continue
 		fi
 
@@ -338,24 +284,4 @@ mca_steam_revert() {
 	sed "s| $MCA_FLAG||g" "$script" > "$tmp" && mv -f "$tmp" "$script" || { rm -f "$tmp"; return 1; }
 	chmod +x -- "$script" 2>/dev/null || true
 	return 0
-}
-
-# mca_steam_flag_position <packaging>
-# Where Steam's own switch goes on a command line. Straight after the program
-# for a native or snap entry, because Steam reads its options before the
-# steam:// argument that the right-click actions pass. For a Flatpak the first
-# token is flatpak itself, which would take the switch for one of its own and
-# refuse to start, so there it goes at the end of the arguments - after the
-# application id, where flatpak hands everything on to Steam.
-mca_steam_flag_position() {
-	[[ ${1:-native} == flatpak ]] && { printf 'before-fields\n'; return; }
-	printf 'after-program\n'
-}
-
-# mca_steam_desktop_apply <id> <source entry> [packaging]
-# Steam restores its own files at every start unless it is told not to verify
-# them, so the launcher entry carries that switch.
-mca_steam_desktop_apply() {
-	mca_desktop_apply "$1" "$2" "$MCA_STEAM_LAUNCH_FLAG" \
-		"$(mca_steam_flag_position "${3:-native}")"
 }

@@ -142,23 +142,22 @@ that checks its files finds nothing to repair, and the argument survives
 however Steam was started - from the menu, from a game shortcut, from a
 launcher like Heroic or Lutris, from a terminal.
 
-That is what has to work, because there is no way to make every possible way of
-starting Steam carry an argument. *-noverifyfiles* is the second line rather
-than the first: it covers the case where the script has no comments left to pay
-for the argument and the patch has to grow the file. It goes on Steam's
-launcher entry, on its entry in _~/.config/autostart_, which Steam writes as
-soon as it is set to run at login, and on the shortcuts Steam writes for single
-games, on the desktop and in the menu alike. A game is not an application this
-program has anything to offer and none of them is listed under *Applications*,
-but starting one is a Steam start like any other. The trade-off of the switch
-is that Steam no longer repairs a damaged installation on its own; that is why
-Steam is a switch of its own in the settings.
+That is what has to work, because it is the only thing that does. A patch that
+changes the length is never written, whatever else could be done to cover for
+it: Steam checks its files at the shutdown it runs itself as well as at a start
+it was given arguments for, and that one carries no arguments of anybody's. One
+wrong length costs the whole client package downloaded, extracted and installed
+again, and a client that quits at the end of it instead of coming up.
 
-A patch that does change the size is still held back while the client is
-running: Steam puts its own copy back, the two would only undo each other, and
-the helper is started once, at the start, so patching again would not help that
-session anyway. It goes in at the next apply with Steam closed. A patch that
-keeps the size has nothing to wait for and goes in either way.
+So where the comments cannot pay for the argument, or a client update has
+changed how the helper is started, nothing is written and the status screen
+says Steam is not patched. Nothing goes on Steam's launcher entry, its
+autostart entry or the shortcuts it writes for single games either, and Steam
+goes on repairing its own installation.
+
+An installation patched by an earlier version, which appended where the
+comments were short, is written again to fit at the next apply, or taken back
+if it cannot be made to.
 
 A client update brings a new version of the script. The watcher notices and
 patches it again, and the copy kept for undoing is replaced with the new

@@ -410,15 +410,6 @@ mca_desktop_apply() {
 #   The desktop folder, where a shortcut somebody dragged out of the menu -
 #   or asked Steam for - lives and nowhere else.
 #
-# Steam is in both, even though it is not a Chromium process itself: its
-# entries need -noverifyfiles exactly like the menu one. The autostart entry is
-# the one most likely to exist, because Steam writes it as soon as "run at
-# startup" is ticked; without it a Steam started at login restores the patched
-# web helper script and the watcher patches it back, over and over. The desktop
-# ones are the gap behind "autoscroll works, except sometimes": starting a game
-# from the desktop is a Steam start like any other, and a Steam start without
-# the switch costs the interface its autoscroll for the rest of the session.
-#
 # Neither can be shadowed from anywhere, so both are edited where they stand,
 # with the original kept.
 
@@ -426,11 +417,10 @@ mca_desktop_apply() {
 # One desktop entry that lives outside the XDG search path, edited where it is
 # because there is nowhere to shadow it from.
 #
-# Anything that starts Steam gets Steam's own switch; a Chromium application
-# gets the flag. What decides whether a Chromium application here is in scope
-# differs by where the entry came from, which is what the gate says: an
-# autostart entry follows the autostart setting, a shortcut follows the same
-# rules as the application it is a shortcut to.
+# What decides whether an application here is in scope differs by where the
+# entry came from, which is what the gate says: an autostart entry follows the
+# autostart setting, a shortcut follows the same rules as the application it is
+# a shortcut to.
 _mca_entry_patch_inplace() {
 	local file="$1" gate="$2"
 	local id prog packaging=native content backup kind
@@ -456,29 +446,28 @@ _mca_entry_patch_inplace() {
 		packaging=snap
 	fi
 
-	if mca_prog_is_steam "$prog"; then
-		[[ $CFG_STEAM == yes ]] || return 0
-		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
-			"$MCA_STEAM_LAUNCH_FLAG" "$(mca_steam_flag_position "$packaging")")"
+	# An entry that starts Steam is left where it is. Steam takes nothing
+	# from a command line that would help, and what it does take belongs to
+	# the web helper script in its own installation.
+	mca_prog_is_steam "$prog" && return 0
+
+	case "$packaging" in
+		flatpak) mca_flatpak_is_chromium "${prog#flatpak:}" || return 0 ;;
+		snap)    mca_snap_is_chromium "${prog#snap:}" || return 0 ;;
+		*)       mca_is_chromium "$prog" || return 0 ;;
+	esac
+
+	mca_desktop_is_browser && kind=browser || kind=app
+
+	if [[ $gate == autostart ]]; then
+		[[ $CFG_AUTOSTART == yes ]] || return 0
 	else
-		case "$packaging" in
-			flatpak) mca_flatpak_is_chromium "${prog#flatpak:}" || return 0 ;;
-			snap)    mca_snap_is_chromium "${prog#snap:}" || return 0 ;;
-			*)       mca_is_chromium "$prog" || return 0 ;;
-		esac
-
-		mca_desktop_is_browser && kind=browser || kind=app
-
-		if [[ $gate == autostart ]]; then
-			[[ $CFG_AUTOSTART == yes ]] || return 0
-		else
-			id="${file##*/}"; id="${id%.desktop}"
-			mca_kind_wanted "$kind" "$id" "$packaging" || return 0
-		fi
-
-		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
-			"$(mca_flags "$kind")")"
+		id="${file##*/}"; id="${id%.desktop}"
+		mca_kind_wanted "$kind" "$id" "$packaging" || return 0
 	fi
+
+	content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
+		"$(mca_flags "$kind")")"
 
 	[[ -n $content ]] || return 0
 	[[ "$content" == "$(< "$file")" ]] && return 0
