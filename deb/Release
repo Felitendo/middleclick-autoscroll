@@ -1,23 +1,23 @@
 Architectures: all
 Codename: stable
 Components: main
-Date: Tue, 01 Sep 2026 11:27:32 +0000
+Date: Fri, 04 Sep 2026 22:46:08 +0000
 Label: middleclick-autoscroll
 Origin: middleclick-autoscroll
 Suite: stable
 MD5Sum:
- a19dd1296e25a8147bc98f53285a33c4             2936 Packages
- 9cecea1f832d0688b8e3b18ce034c70f             1023 Packages.gz
- 8e198240675e22a8a4c86c484021f6bd              166 Release
+ 814cafbec850665e03efd78094134cd8             4404 Packages
+ 24c5858b6cc303a73bc73efdd243a79d             1149 Packages.gz
+ 0b46a85fa3425956c05a4a88dbe2efe5              166 Release
 SHA1:
- c830e926b5550b7995b65f7cca5dc26fb9b45b6f             2936 Packages
- 4349f41139abd7aa2756d23a9d1921376ce2351a             1023 Packages.gz
- bd398bc3d9b4c5f3d69f2a5b61161a3e453a8b2b              166 Release
+ 06fa287df485b60d9b8d120f6aa765aa48e5ed8a             4404 Packages
+ a380ea62e65fbd4dfc2d85898360899147e8ba74             1149 Packages.gz
+ cfd2a65998b558ade334b78a57d99972b0c8a7f7              166 Release
 SHA256:
- 2932b4609d4cf796430fde62b21a931ad038fa8933f34c2e549c74169704cb3f             2936 Packages
- 908d3b74600edeb085bc31d03209a8338ab2beaaa4a675fd96768d7c7f355914             1023 Packages.gz
- 3f3f9e1d4841f44268bdcd4ea2d986a1382da8c67c40f074c3dcfc6b47ad6fb0              166 Release
+ 188de440d0f0f8a5d34836df3ce33146b948f76797a6b8c15e2750dbbebe7d71             4404 Packages
+ 5921ece1ebcf1decd182bc8bfc21d928f1c6eddcaff7ee84b81056bf6ce99594             1149 Packages.gz
+ eca3333e005cde2f211f894860f33183ddc9464d386f85f87e4be89b5dfd6fbf              166 Release
 SHA512:
- 388ca394053a8791f202643b7916abc725ba5e202f35546e0e176a532e58495266f0405fa3b80e9d28749189fbc386289e74940fe74d5f4caeb620d438523d4c             2936 Packages
- 7e1422657bf014a54adbb54f76909c18283ab3e96a31ab86533c4890b78919a214bf177f7806515bf7beb4543a3706fea9eddc5268ec0136517cadd9fb05521d             1023 Packages.gz
- 0d4a24695925476b1f046b71e0dcac6f2269884d31acf78bac3cef3c11fbf05e042c0292fb70df6d32e01958a544a169631c617fdfd4095d8402266069a9df96              166 Release
+ 14c6a1a51a55304774ab9b251186aa5238deb4a9657d70b2b9cc0e727478100f54925f408d00fce404268ce772f4c866cbd178120c3212f7ef32f390b570e0ea             4404 Packages
+ 944a030c39b956aae90cba28ca6aa8b64f06da19b58f0475e79719abb1700b43fae8ad84c330de997f64064eeead4ec228e55df39ad7ca4eb513bb8db9c02a9e             1149 Packages.gz
+ 8297d761dbf4b41bc0ce2d20f3db699e49a578184904a1eced836c5e5d9033b094618e591e300b62754cf25fb6b2ee1489abfac8b3f174e926329f4ecac08c57              166 Release
