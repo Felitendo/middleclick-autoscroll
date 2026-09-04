@@ -43,7 +43,9 @@ sudo zypper install middleclick-autoscroll
 
 ## How to use
 
-Just run `middleclick-autoscroll`. This will open the configuration TUI.
+Just run `middleclick-autoscroll`. This will open the configuration TUI that looks like this:
+
+//
 
 ## How it works
 
