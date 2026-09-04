@@ -45,7 +45,50 @@ sudo zypper install middleclick-autoscroll
 
 Just run `middleclick-autoscroll`. This will open the configuration TUI that looks like this:
 
-//
+```
+  Middle-Click Autoscroll
+
+  Autoscroll                     ON
+
+  Applications covered           11 of 13
+  Not identified                 1 - see the applications list
+  Steam                          ON
+  New applications               ON
+  Last applied                   2 minutes ago
+
+  Applications pick this up the next time they are started.
+
+  [1] Turn autoscroll on or off
+  [2] Re-apply everything
+  [3] Applications
+  [4] Settings
+  [q] Quit
+
+  >
+```
+
+`[1]` is all you need for the normal case. `[3]` lists every app that was found
+and what is being done with it, so you can leave a single one out or switch on
+an AppImage that couldn't be identified:
+
+```
+  Applications
+
+  ▸ Steam                              on (Steam)
+    Chromium                           on (launcher)
+    Discord                            on (flag file)
+    Obsidian                           on (launcher)
+    Spotify                            on (launcher)
+    Slack                              off
+    Cursor                             cannot tell
+
+  Anything not identified is left alone until it is turned on here.
+  Up/Down select - Space turns one on or off - q goes back
+```
+
+`[4]` has the same switches per category - browsers, Electron and CEF apps,
+Flatpaks, snaps, autostart entries, Steam, Spotify - plus a field for extra
+Chromium arguments.
 
 ## How it works
 
