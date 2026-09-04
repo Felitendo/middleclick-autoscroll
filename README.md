@@ -10,7 +10,7 @@ There is no app list. My tool just looks at what uses chromium under the hood an
 **Arch**
 
 ```bash
-paru -S middleclick-autoscroll
+yay -S middleclick-autoscroll
 ```
 
 **Fedora**
