@@ -30,6 +30,40 @@ MCA_MARK_BEGIN='# >>> middleclick-autoscroll'
 MCA_MARK_END='# <<< middleclick-autoscroll'
 
 # ---------------------------------------------------------------------------
+# Feature lists
+# ---------------------------------------------------------------------------
+# Both --enable-features and --enable-blink-features take a comma separated
+# list, and Chromium keeps the last one it is given and drops the rest. A
+# second one of the same kind would therefore silently switch off whatever the
+# first one turned on, so an option that is already there is extended instead.
+
+# _mca_list_merge <list> <wanted>
+# The two lists as one, in the order they came and without repeating anything.
+_mca_list_merge() {
+	local out="$1" item
+	for item in ${2//,/ }; do
+		[[ ",$out," == *",$item,"* ]] && continue
+		out="${out:+$out,}$item"
+	done
+	printf '%s' "$out"
+}
+
+# _mca_list_strip <list> <unwanted>
+# The list without any of the named entries.
+_mca_list_strip() {
+	local out='' item
+	for item in ${1//,/ }; do
+		[[ ",$2," == *",$item,"* ]] && continue
+		out="${out:+$out,}$item"
+	done
+	printf '%s' "$out"
+}
+
+# The two options, as a regular expression branch, for the places that have to
+# recognise either of them.
+MCA_FEATURE_OPTS='--enable-blink-features|--enable-features'
+
+# ---------------------------------------------------------------------------
 # Command lines
 # ---------------------------------------------------------------------------
 
@@ -70,28 +104,32 @@ _mca_exec_after_program() {
 # Prints nothing and returns 1 when there was nothing to change, so callers can
 # tell a real edit from a no-op without diffing.
 #
-# An --enable-blink-features that is already there is extended rather than
-# repeated: Chromium keeps the last occurrence of the option and drops the
-# rest, so a second one would silently disable whatever the first turned on.
+# A feature list that is already on the line is extended rather than repeated.
+# See _mca_list_merge.
 mca_exec_inject() {
 	local line="$1" flagstr="${2:-}" where="${3:-before-fields}"
-	local flag value existing at changed=0
+	local flag opt value existing merged re at changed=0
 	local -a flags
 
 	[[ -n $flagstr ]] || flagstr="$(mca_flags)"
 	read -r -a flags <<< "$flagstr"
 
 	for flag in "${flags[@]}"; do
-		if [[ $flag == --enable-blink-features=* ]]; then
-			value="${flag#--enable-blink-features=}"
-			if [[ $line =~ --enable-blink-features=([A-Za-z0-9,_-]*) ]]; then
-				existing="${BASH_REMATCH[1]}"
-				[[ ",$existing," == *",$value,"* ]] && continue
-				line="${line/--enable-blink-features=$existing/--enable-blink-features=${existing:+$existing,}$value}"
-				changed=1
-				continue
-			fi
-		fi
+		case "$flag" in
+			--enable-blink-features=*|--enable-features=*)
+				opt="${flag%%=*}"
+				value="${flag#*=}"
+				re="(^|[[:space:]])$opt=([^[:space:]]*)"
+				if [[ $line =~ $re ]]; then
+					existing="${BASH_REMATCH[2]}"
+					merged="$(_mca_list_merge "$existing" "$value")"
+					[[ $merged == "$existing" ]] && continue
+					line="${line/$opt=$existing/$opt=$merged}"
+					changed=1
+					continue
+				fi
+				;;
+		esac
 
 		[[ " $line " == *" $flag "* ]] && continue
 
@@ -117,12 +155,12 @@ mca_exec_inject() {
 # Flag files
 # ---------------------------------------------------------------------------
 
-# mca_flags_apply <program>
+# mca_flags_apply <program> [kind]
 # Writes the flags into the file the program's launcher reads. Returns 0 when
 # the program has such a file (whether or not anything needed changing), 1 when
 # it has none and the desktop entry route has to be used instead.
 mca_flags_apply() {
-	local prog="$1" name target='' existing_target=''
+	local prog="$1" kind="${2:-app}" name target='' existing_target=''
 	local -a candidates=()
 
 	mapfile -t candidates < <(mca_flags_candidates "$prog" | awk '!seen[$0]++')
@@ -133,7 +171,7 @@ mca_flags_apply() {
 	for name in "${candidates[@]}"; do
 		if [[ -f "$MCA_XDG_CONFIG/$name" ]]; then
 			existing_target="$name"
-			_mca_flags_write "$MCA_XDG_CONFIG/$name"
+			_mca_flags_write "$MCA_XDG_CONFIG/$name" "$kind"
 		fi
 	done
 	[[ -n $existing_target ]] && return 0
@@ -143,19 +181,21 @@ mca_flags_apply() {
 	# creating that one also covers every other application using the same
 	# shared Electron.
 	target="${candidates[-1]}"
-	_mca_flags_write "$MCA_XDG_CONFIG/$target"
+	_mca_flags_write "$MCA_XDG_CONFIG/$target" "$kind"
 	return 0
 }
 
-# _mca_flags_write <file>
-# Adds the flags as a marked block, or merges into an --enable-blink-features
-# line that is already in the file.
+# _mca_flags_write <file> [kind]
+# Adds the flags as a marked block, or merges into a feature list that is
+# already in the file.
 _mca_flags_write() {
-	local file="$1" content='' line flag value existing merged=0 block=''
+	local file="$1" kind="${2:-app}"
+	local content='' line flag opt want existing merged=0 block=''
 	local -a flags
+	local -A merged_opts=()
 	local created=0
 
-	read -r -a flags <<< "$(mca_flags)"
+	read -r -a flags <<< "$(mca_flags "$kind")"
 
 	[[ -f $file ]] || created=1
 	if (( ! created )); then
@@ -166,16 +206,23 @@ _mca_flags_write() {
 		fi
 	fi
 
-	# Merge into a blink-features line the user (or a distribution) put there.
-	if [[ $content == *--enable-blink-features=* ]]; then
+	# Merge into a feature list the user (or a distribution) put there, rather
+	# than write a second line of the same option further down.
+	if [[ $content == *--enable-* ]]; then
 		local out=''
 		while IFS= read -r line; do
-			if [[ $line =~ ^[[:space:]]*--enable-blink-features=([A-Za-z0-9,_-]*)[[:space:]]*$ ]]; then
-				existing="${BASH_REMATCH[1]}"
-				if [[ ",$existing," != *",$MCA_FEATURE,"* ]]; then
-					line="--enable-blink-features=${existing:+$existing,}$MCA_FEATURE"
+			if [[ $line =~ ^[[:space:]]*($MCA_FEATURE_OPTS)=([^[:space:]]*)[[:space:]]*$ ]]; then
+				opt="${BASH_REMATCH[1]}"
+				existing="${BASH_REMATCH[2]}"
+				want=''
+				for flag in "${flags[@]}"; do
+					[[ $flag == "$opt="* ]] && want="${flag#*=}"
+				done
+				if [[ -n $want ]]; then
+					line="$opt=$(_mca_list_merge "$existing" "$want")"
+					merged_opts["$opt"]=1
+					merged=1
 				fi
-				merged=1
 			fi
 			out+="$line"$'\n'
 		done <<< "$content"
@@ -183,7 +230,7 @@ _mca_flags_write() {
 	fi
 
 	for flag in "${flags[@]}"; do
-		(( merged )) && [[ $flag == --enable-blink-features=* ]] && continue
+		[[ -n ${merged_opts["${flag%%=*}"]:-} ]] && continue
 		block+="$flag"$'\n'
 	done
 
@@ -218,7 +265,7 @@ _mca_flags_drop_block() {
 
 # mca_flags_revert <file> <detail>
 mca_flags_revert() {
-	local file="$1" detail="$2" content line out='' existing new
+	local file="$1" detail="$2" content line out='' opt existing new
 
 	[[ -f $file ]] || return 0
 
@@ -238,12 +285,13 @@ mca_flags_revert() {
 
 	if [[ $detail == merged* ]]; then
 		while IFS= read -r line; do
-			if [[ $line =~ ^[[:space:]]*--enable-blink-features=([A-Za-z0-9,_-]*)[[:space:]]*$ ]]; then
-				existing="${BASH_REMATCH[1]}"
-				new="${existing//$MCA_FEATURE/}"
-				new="${new//,,/,}"; new="${new#,}"; new="${new%,}"
+			if [[ $line =~ ^[[:space:]]*($MCA_FEATURE_OPTS)=([^[:space:]]*)[[:space:]]*$ ]]; then
+				opt="${BASH_REMATCH[1]}"
+				existing="${BASH_REMATCH[2]}"
+				# Either name, whichever version of this program put it there.
+				new="$(_mca_list_strip "$existing" "$MCA_BROWSER_FEATURES")"
 				[[ -z $new ]] && continue
-				line="--enable-blink-features=$new"
+				line="$opt=$new"
 			fi
 			out+="$line"$'\n'
 		done <<< "$content"
@@ -419,15 +467,17 @@ _mca_entry_patch_inplace() {
 			*)       mca_is_chromium "$prog" || return 0 ;;
 		esac
 
+		mca_desktop_is_browser && kind=browser || kind=app
+
 		if [[ $gate == autostart ]]; then
 			[[ $CFG_AUTOSTART == yes ]] || return 0
 		else
 			id="${file##*/}"; id="${id%.desktop}"
-			mca_desktop_is_browser && kind=browser || kind=app
 			mca_kind_wanted "$kind" "$id" "$packaging" || return 0
 		fi
 
-		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE")"
+		content="$(_mca_desktop_transform "$file" "$MCA_MARK_INPLACE" \
+			"$(mca_flags "$kind")")"
 	fi
 
 	[[ -n $content ]] || return 0

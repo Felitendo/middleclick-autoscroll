@@ -101,6 +101,19 @@ flag turns it on:
 But doing that for every app is kinda bothersome and it also might break with updates.
 That's why I created this small tool to automate that.
 
+Browsers get the same thing asked for differently:
+
+--enable-features=MiddleClickAutoscroll
+
+Both mean the same feature - Blink generates a matching feature name for each of
+its runtime flags - but the first one is on Chromium's list of flags worth
+warning about, so a browser started with it shows a yellow "unsupported
+command-line flag" bar over every page. The second one is not on that list, so
+there's no bar. It only works from Chromium 124 on, which is why apps that
+embed something older (Steam's CEF, older Electron) keep the first one - they
+have no such bar to begin with. Helium, which carries the feature under its own
+name, is asked for `HeliumMiddleClickAutoscroll` alongside it.
+
 New apps are picked up by a systemd path unit that watches the
 relevant directories. Without systemd, `middleclick-autoscroll apply` does the
 same thing manually.

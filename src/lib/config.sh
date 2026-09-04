@@ -154,10 +154,18 @@ mca_config_load() {
 	CFG_SKIP="$(mca_config_get Skip '')"
 }
 
+# mca_flags [kind]
 # The full argument string that gets injected. Kept in one place so the flag
 # file writer and the desktop entry writer cannot drift apart.
+#
+# A browser gets the flag that leaves it without a warning bar; everything else
+# gets the one that works in every Chromium there is. See MCA_FLAG.
 mca_flags() {
-	printf '%s' "$MCA_FLAG"
+	if [[ ${1:-app} == browser ]]; then
+		printf '%s' "$MCA_BROWSER_FLAG"
+	else
+		printf '%s' "$MCA_FLAG"
+	fi
 	[[ -n ${CFG_EXTRA_FLAGS:-} ]] && printf ' %s' "$CFG_EXTRA_FLAGS"
 	printf '\n'
 }

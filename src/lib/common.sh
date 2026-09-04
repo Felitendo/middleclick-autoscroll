@@ -13,11 +13,42 @@ MCA_PRETTY="Middle-Click Autoscroll"
 # The whole point of the package. Blink implements Windows-style autoscroll
 # behind a runtime flag that Chromium does not turn on for Linux, because
 # middle click is taken by primary-selection paste there.
+#
+# There are two ways to ask for that flag, and which one is right depends on
+# what is being started:
+#
+#   --enable-blink-features=MiddleClickAutoscroll is the one that works
+#   everywhere, and the only one that works in the Chromium versions embedded
+#   applications ship - Steam's CEF, an Electron a few years old, anything
+#   before Chromium 124. A browser started with it puts a yellow bar above the
+#   page saying an unsupported command line flag is in use, because Chromium
+#   keeps a list of flags worth warning about and this is on it.
+#
+#   --enable-features=MiddleClickAutoscroll is not on that list, so a browser
+#   started with it says nothing. Blink generates a feature of the same name
+#   for every one of its runtime flags, which is what makes the two the same
+#   request - but only since Chromium 124. Before that the name means nothing
+#   and is ignored without a word.
+#
+# So a browser, which is the only thing that shows the bar and the one thing
+# that keeps itself up to date, is given the quiet one; everything else keeps
+# the one that always works.
 MCA_FLAG="--enable-blink-features=MiddleClickAutoscroll"
 
-# The Blink feature name on its own, for merging into an --enable-blink-features
-# list that an app (or the user) already carries.
+# Helium ships the feature under its own name and does not answer to the
+# Chromium one, so browsers are asked for both. A name a browser does not know
+# is ignored, which is what makes one list safe to hand to all of them.
+MCA_BROWSER_FLAG="--enable-features=MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
+
+# The feature names on their own, for merging into a list that an application
+# (or the user) already carries, and for taking them back out again.
 MCA_FEATURE="MiddleClickAutoscroll"
+MCA_BROWSER_FEATURES="MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
+
+# Bumped when the flags above change. An installation that was set up by a
+# version with a different answer is taken back and done again once, because a
+# file that is already patched is otherwise left alone. See mca_apply.
+MCA_FLAG_SCHEME=2
 
 MCA_LIBDIR="${MCA_LIBDIR:-@LIBDIR@}"
 MCA_LOCALEDIR="${MCA_LOCALEDIR:-@LOCALEDIR@}"

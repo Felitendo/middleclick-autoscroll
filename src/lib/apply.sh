@@ -66,6 +66,15 @@ mca_apply() {
 	MCA_N_ON=0; MCA_N_OFF=0; MCA_N_UNKNOWN=0
 
 	mca_config_load
+
+	# An installation that was set up by a version whose answer was a different
+	# flag still has that flag where it put it, and nothing below would touch it
+	# again: a file that is already marked as patched is left alone. Taking
+	# everything back once, here, is what carries such an installation over.
+	if [[ "$(mca_state_read flag_scheme 1)" != "$MCA_FLAG_SCHEME" ]]; then
+		mca_revert_all
+	fi
+
 	mca_scan
 
 	for i in "${!MCA_IDS[@]}"; do
@@ -87,10 +96,11 @@ mca_apply() {
 
 		case "$route" in
 			flags)
-				mca_flags_apply "$prog" || mca_desktop_apply "$id" "$file"
+				mca_flags_apply "$prog" "$kind" \
+					|| mca_desktop_apply "$id" "$file" "$(mca_flags "$kind")"
 				;;
 			desktop)
-				mca_desktop_apply "$id" "$file"
+				mca_desktop_apply "$id" "$file" "$(mca_flags "$kind")"
 				;;
 			steam)
 				mca_steam_desktop_apply "$id" "$file" "$packaging"
@@ -143,6 +153,7 @@ mca_apply() {
 	fi
 
 	mca_state_write last_apply "$(date +%s)"
+	mca_state_write flag_scheme "$MCA_FLAG_SCHEME"
 	return 0
 }
 

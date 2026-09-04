@@ -18,7 +18,18 @@ on the command line.
 
 *middleclick-autoscroll* finds every Chromium-based application on the system
 and puts that argument somewhere the application will actually read it, then
-keeps doing so for anything installed later. It works on any distribution:
+keeps doing so for anything installed later.
+
+A browser is given *--enable-features=MiddleClickAutoscroll* instead. It asks
+for the same feature - Blink generates a feature of that name for each of its
+runtime flags - but it is not on the list of flags Chromium warns about, so the
+browser does not put a bar reading "You are using an unsupported command-line
+flag" above every page. That spelling only works from Chromium 124 onwards,
+which is why everything else keeps the first one: an application that embeds an
+older Chromium, such as Steam's CEF, has no such bar to show anyway. Helium
+knows the feature under a name of its own and is asked for
+*HeliumMiddleClickAutoscroll* as well; a name a browser does not know is
+ignored. It works on any distribution:
 which of the routes below an application takes is read off its launcher, not
 assumed from where the launcher came from.
 
@@ -71,10 +82,10 @@ Two ways, chosen per application.
 	Where the launcher reads extra arguments from
 	_$XDG_CONFIG_HOME/<name>-flags.conf_. This is the preferred route: it is
 	the supported way to pass arguments, it survives package upgrades, and it
-	applies to a launch from a terminal as much as one from the menu. An
-	*--enable-blink-features* line that is already in the file is extended
-	rather than duplicated - Chromium keeps only the last occurrence of that
-	option, so a second one would switch the first one off.
+	applies to a launch from a terminal as much as one from the menu. A
+	feature list that is already in the file is extended rather than
+	duplicated - Chromium keeps only the last occurrence of such an option, so
+	a second one would switch the first one off.
 
 	Arch's Electron and Chromium packages all wrap their binaries this way, and
 	so do a number of individual vendors' launchers elsewhere. Whether a given
