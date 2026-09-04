@@ -41,10 +41,9 @@ sudo zypper addrepo --gpgcheck --refresh \
 sudo zypper install middleclick-autoscroll
 ```
 
-Then run `middleclick-autoscroll`. This will open the configuration CLI.
+## How to use
 
-Remember to run `middleclick-autoscroll disable` before removing the package
-so it undoes everything.
+Just run `middleclick-autoscroll`. This will open the configuration TUI.
 
 ## How it works
 
@@ -84,8 +83,6 @@ damaged files on its own just so you're aware of that.
 | `… apply --rebuild` | Redo from scratch |
 | `… status` | What's covered |
 | `… list` | All apps and how they're handled |
-
-Or just use `man middleclick-autoscroll` for a simple to navigate TUI.
 
 ## Building from source
 
