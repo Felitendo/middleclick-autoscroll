@@ -293,6 +293,16 @@ mca_ledger_add() {
 	printf '%s\t%s\t%s\n' "$kind" "$path" "$detail" >> "$MCA_LEDGER"
 }
 
+# mca_ledger_has <path>
+# Whether the ledger still knows about that file. Worth asking because the copy
+# kept beside it is named after the path and outlives a ledger that was lost or
+# truncated: a file nothing has a record of any more is one nothing would ever
+# look at again.
+mca_ledger_has() {
+	[[ -f $MCA_LEDGER ]] || return 1
+	awk -F'\t' -v p="$1" '$2 == p { found = 1 } END { exit !found }' "$MCA_LEDGER"
+}
+
 mca_ledger_forget() {
 	local path="$1" tmp
 	[[ -f $MCA_LEDGER ]] || return 0

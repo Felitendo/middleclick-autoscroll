@@ -423,9 +423,21 @@ mca_desktop_apply() {
 # a shortcut to.
 _mca_entry_patch_inplace() {
 	local file="$1" gate="$2"
-	local id prog packaging=native content backup kind
+	local id prog packaging=native content backup kind copy
 
-	grep -q "^$MCA_MARK_INPLACE=" "$file" 2>/dev/null && return 0
+	# Already ours, and normally that is the end of it: what is in there is what
+	# this version put there. Not so for a file the ledger has no record of -
+	# nothing would ever look at that one again, neither the undo a change of
+	# flags goes through nor this, which leaves a marked file alone, and it would
+	# keep an answer from an older version for good. The copy taken before the
+	# edit is named after the path and is still there, so the file goes back to
+	# what it was and is written again below.
+	if grep -q "^$MCA_MARK_INPLACE=" "$file" 2>/dev/null; then
+		mca_ledger_has "$file" && return 0
+		copy="$MCA_BACKUPDIR/$(mca_backup_name "$file")"
+		[[ -f $copy ]] || return 0
+		cp -p -- "$copy" "$file" 2>/dev/null || return 0
+	fi
 
 	_mca_desktop_read "$file"
 	[[ -n $DE_EXEC ]] || return 0
