@@ -4,39 +4,39 @@ Hash: SHA512
 Architectures: all
 Codename: stable
 Components: main
-Date: Fri, 04 Sep 2026 22:46:08 +0000
+Date: Sun, 06 Sep 2026 12:01:51 +0000
 Label: middleclick-autoscroll
 Origin: middleclick-autoscroll
 Suite: stable
 MD5Sum:
- 814cafbec850665e03efd78094134cd8             4404 Packages
- 24c5858b6cc303a73bc73efdd243a79d             1149 Packages.gz
- 0b46a85fa3425956c05a4a88dbe2efe5              166 Release
+ b228ec14a8e729f5618e81ebc24ab51d             5872 Packages
+ dea93203656148684ee910c02161a8cb             1268 Packages.gz
+ f04fc6cdda2085c6a0a6c8100473f250              166 Release
 SHA1:
- 06fa287df485b60d9b8d120f6aa765aa48e5ed8a             4404 Packages
- a380ea62e65fbd4dfc2d85898360899147e8ba74             1149 Packages.gz
- cfd2a65998b558ade334b78a57d99972b0c8a7f7              166 Release
+ 245855920f1032edeba9208d8a71fbd39a9e8ae4             5872 Packages
+ c46332bb20cfc922337d718a64283fe7cc14964d             1268 Packages.gz
+ a3569b01abb7f1efe225b714eed54ffe13cba0c1              166 Release
 SHA256:
- 188de440d0f0f8a5d34836df3ce33146b948f76797a6b8c15e2750dbbebe7d71             4404 Packages
- 5921ece1ebcf1decd182bc8bfc21d928f1c6eddcaff7ee84b81056bf6ce99594             1149 Packages.gz
- eca3333e005cde2f211f894860f33183ddc9464d386f85f87e4be89b5dfd6fbf              166 Release
+ aa2f8f485b0272fdad6c2eb2545ff0a0ddec87cfb0347a85aef2815d8490ac8a             5872 Packages
+ e269707f8e5bfec7f4f4add770f59590d12b7027a31efd641a3be221bcd0b7e9             1268 Packages.gz
+ 12898c1b83a09535a43779b8f4d2cc54d3f18e71b6be9d586dd18fed4e6e8bf5              166 Release
 SHA512:
- 14c6a1a51a55304774ab9b251186aa5238deb4a9657d70b2b9cc0e727478100f54925f408d00fce404268ce772f4c866cbd178120c3212f7ef32f390b570e0ea             4404 Packages
- 944a030c39b956aae90cba28ca6aa8b64f06da19b58f0475e79719abb1700b43fae8ad84c330de997f64064eeead4ec228e55df39ad7ca4eb513bb8db9c02a9e             1149 Packages.gz
- 8297d761dbf4b41bc0ce2d20f3db699e49a578184904a1eced836c5e5d9033b094618e591e300b62754cf25fb6b2ee1489abfac8b3f174e926329f4ecac08c57              166 Release
+ 1516170c4bf3dcb297d085932a584d847f0ed8f348c09c80bed94065c29ed2f273bddd2a2a08cc86536fb647c5bd39a5047ba84be6de3d38718a84ada4416091             5872 Packages
+ 7e6dbace8f33101cf7f23a0a53a9b3e4deeeb07ee231e82e0fa495f2785b39b96311cf11a2b2b1cde4350f16dfc7d12ceea6e71cfca6b5aae1ab0a39639a1a45             1268 Packages.gz
+ 448c08f13ca7afc05bb82f6ed84b921d5727888038d0a1d889cd3625e79f9590e3f8d24ff565539d96238fab2287e0eb431dea056bf2c90243e857fd4b254913              166 Release
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEEY4PI9Dc7LesUkuKsVaPG3ykUTHkFAmqbSjEACgkQVaPG3ykU
-THn6/A//RPUvrDDWTHU5ZgXIGV4rcuydIIW4CXFxbCyE1MPpKXlY+TqLNQmpxJMY
-Sb+n/9zCvOGgvL8IT4RDbkf2BKYZ2H5d2MtUyob4wD84Mzov0LvoZfSb/BvP7Pxi
-7YMbKVk9LMW7D2KUPudDLRFMZaLQFsySOcIsK0yEssaE6j6Q7LzjkstUOz/gDWeb
-IxvXPNvK0UC7oMVfSqb6wo3TksQukJPd7+Aw/S1Sim9lZWj1ofqNsFPL5jgSNujQ
-/NNTuZ4c9mE+WnXbSgLJN/VHxIEPPRT8oAVNTeY4LdYtHyQkqVYkhOHkaVHxsPoA
-LRgK8HYRGG+khfo5i69ldUge7FgzpblG3BTGWC/khdgaQgRnXbVsXvt3IOSjhw+8
-AomXuykjQjFMpXikHJW9l/hQUEgZz0Sphwdcea8bFI5XWDNFL3tWUzeHP2VyvSAH
-WcI7Tot1iJCxMu1Od3HUb9JiSnwfycNpbUZrLE03donb3bV8CaM6YFSY2d9Ittgp
-ZzqaW3O6RNR6tWWiCGv50Am59K+WYE68t+i406r06zU2a5S2pHqEzr6qheKRX6zA
-ND5x0/MfDXRHo8NB9BonspNFkRJzlMgf48GKZm8BpfR6Bi9BZlKAXO0V7YzpkIFt
-NjF6/xF/W+9YQU+c/2pqKxFK5SkoA+icSQnNSqMuIANpI2XNWoo=
-=RgVp
+iQIzBAEBCgAdFiEEY4PI9Dc7LesUkuKsVaPG3ykUTHkFAmqdVi8ACgkQVaPG3ykU
+THmWrBAAhuJnA6fPC7CEAr0ekXnnbLYjXiVcWvBMvW7dFYRHg68vMTc0CkRJpGH0
+lHJosuWWY2ERLAdqig2ttPyF81tcOdJFZuVNAFJWqGHPD+RbLRD991uEvk/PGZmP
+QLKRqIp8blBiffHcU0/GH1acokCK0L4AWfd+3Gohrj68jDp2DeV0s+OktbcJ4bW+
+Ja27BWhofxGl4vyFOqCB4dkQzefAX+xiNj+BePMWgGzfjnZKbskDNKLhda+qle2h
+AAH6XeKh7MGvBOx0IBVsLZLrKuye6zwB6rYg7aTk74Xd1GBdHpCEB1jcuX8Xqlce
+/D+SRnK0qFJfQRYSChegeOXvs4bIaFepkgyXj/rnL5jZlROKnvbir6fODjEGex5h
+QgiNeIk/kw6X8DE070btlQMV6pJPSZ7JYB3fp5l9c1ew/VcYnAxJtVQvZqWSIzbx
+xx3nlmOapZM+oDZXn5NKWjVZ279moR3EauZU8gTcxmGPtuC1deMn3UwflSpVcoZu
+NpigQ/1WApQT12hzHubYtplXbI5lUGAjy/G+x8vXinJJPLC2MvaJz+vFEQXl5X8x
+/zbNGLHxOlp0ESjxGA8EXscTlaH1JwkHsUMVPOTPkhrMxSNjyzUILC1WLhIHWmGF
+NgOz6rO/vNSSfEvDHb3wAEcKX6+nb418nRjtg92Fh0RMgY+6XCs=
+=MQ2f
 -----END PGP SIGNATURE-----
