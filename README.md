@@ -1,19 +1,19 @@
 # middleclick-autoscroll
 
-Middle-click autoscroll is a CLI for Linux that enables autoscroll in every application that supports it.
+middleclick-autoscroll (what a great name, wow) is a CLI for Linux that enables autoscroll in every application that supports it.
 Works with browsers, Electron apps like Discord and Spotify, Steam, and anything else that runs on Chromium under the hood.
 
-There is no app list. My tool just looks at what uses chromium under the hood and applies the necessary steps to get it working.
+This tool looks at which of your apps run chromium under the hood and applies the necessary steps to get autoscrolling working.
 
 ## How to install
 
-**Arch**
+**Arch (for the cachyos enjoyers)**
 
 ```bash
 yay -S middleclick-autoscroll
 ```
 
-**Fedora**
+**Fedora (for the mentally stable)**
 
 ```bash
 sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
@@ -21,7 +21,7 @@ sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
 sudo dnf install middleclick-autoscroll
 ```
 
-**Debian**
+**Debian (for the elderly)**
 
 ```bash
 sudo install -d -m 0755 /etc/apt/keyrings
@@ -32,7 +32,7 @@ echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felit
 sudo apt update && sudo apt install middleclick-autoscroll
 ```
 
-**openSUSE**
+**openSUSE (idek who uses that)**
 
 ```bash
 sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
@@ -67,9 +67,8 @@ Just run `middleclick-autoscroll`. This will open the configuration TUI that loo
   >
 ```
 
-`[1]` is all you need for the normal case. `[3]` lists every app that was found
-and what is being done with it, so you can leave a single one out or switch on
-an AppImage that couldn't be identified:
+Normally you just need to press `[1]` and the magic is done.
+Pressing `[3]` lets you see every app that was found and toggle each individually. 
 
 ```
   Applications
@@ -82,58 +81,31 @@ an AppImage that couldn't be identified:
     Slack                              off
     Cursor                             cannot tell
 
-  Anything not identified is left alone until it is turned on here.
   Up/Down select - Space turns one on or off - q goes back
 ```
 
-`[4]` has the same switches per category - browsers, Electron and CEF apps,
-Flatpaks, snaps, autostart entries, Steam, Spotify - plus a field for extra
-Chromium arguments.
+`[4]` for more settings.
 
 ## How it works
 
 Blink (the engine in Chromium, Electron, and CEF) already has autoscroll, but
-it's off on Linux because middle click does primary-selection paste there. This
-flag turns it on:
+it's off on Linux by default because middle click normally pastes the clipboard (??).
+This flag turns it on:
 
 --enable-blink-features=MiddleClickAutoscroll
 
 But doing that for every app is kinda bothersome and it also might break with updates.
 That's why I created this small tool to automate that.
 
-Browsers get the same thing asked for differently:
+Browsers get the same thing but this time without "blink":
 
 --enable-features=MiddleClickAutoscroll
 
-Both mean the same feature - Blink generates a matching feature name for each of
-its runtime flags - but the first one is on Chromium's list of flags worth
-warning about, so a browser started with it shows a yellow "unsupported
-command-line flag" bar over every page. The second one is not on that list, so
-there's no bar. It only works from Chromium 124 on, which is why apps that
-embed something older (Steam's CEF, older Electron) keep the first one - they
-have no such bar to begin with. Helium, which carries the feature under its own
-name, is asked for `HeliumMiddleClickAutoscroll` alongside it.
+But both do the same ¯\_(ツ)_/¯
 
 New apps are picked up by a systemd path unit that watches the
-relevant directories. Without systemd, `middleclick-autoscroll apply` does the
+relevant directories. If you hate systemd; `middleclick-autoscroll apply` does the
 same thing manually.
-
-## Steam
-
-Steam's web UI supports autoscroll but has no way to pass extra arguments to its
-helper, so the program patches the script that starts it. Steam checks its own
-files against its manifest - by size and timestamp - and reinstalls the whole
-client package over anything that differs, so the patch is written to look
-unchanged: the bytes the argument costs are taken back out of the script's
-comments and the timestamp is put back.
-
-If that can't be done - a script with no comments left to pay for the argument,
-or one this version doesn't recognise - nothing is written and Steam is left
-alone. A file of the wrong length costs the client package downloaded and
-installed again, and a Steam that quits at the end of it instead of coming up;
-no autoscroll in Steam is the smaller problem. Nothing is added to Steam's
-launcher entry or to the shortcuts it writes for games, and Steam keeps
-repairing its own installation.
 
 ## Commands
 
