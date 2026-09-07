@@ -32,7 +32,7 @@ echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felit
 sudo apt update && sudo apt install middleclick-autoscroll
 ```
 
-**openSUSE (idek who uses that)**
+**openSUSE (idek who would use that)**
 
 ```bash
 sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
