@@ -31,6 +31,25 @@ Just run `middleclick-autoscroll`. This will open the configuration TUI that loo
   >
 ```
 
+Normally you just need to press `[1]` and the magic is done.
+Pressing `[3]` lets you see every app that was found and toggle each individually. 
+
+```
+  Applications
+
+  ▸ Steam                              on (Steam)
+    Chromium                           on (launcher)
+    Discord                            on (flag file)
+    Obsidian                           on (launcher)
+    Spotify                            on (launcher)
+    Slack                              off
+    Cursor                             cannot tell
+
+  Up/Down select - Space turns one on or off - q goes back
+```
+
+`[4]` for more settings.
+
 ## How to install
 
 **Arch (for the cachyos enjoyers)**
@@ -66,25 +85,6 @@ sudo zypper addrepo --gpgcheck --refresh \
   https://felitendo.github.io/middleclick-autoscroll/rpm middleclick-autoscroll
 sudo zypper install middleclick-autoscroll
 ```
-
-Normally you just need to press `[1]` and the magic is done.
-Pressing `[3]` lets you see every app that was found and toggle each individually. 
-
-```
-  Applications
-
-  ▸ Steam                              on (Steam)
-    Chromium                           on (launcher)
-    Discord                            on (flag file)
-    Obsidian                           on (launcher)
-    Spotify                            on (launcher)
-    Slack                              off
-    Cursor                             cannot tell
-
-  Up/Down select - Space turns one on or off - q goes back
-```
-
-`[4]` for more settings.
 
 ## How it works
 
