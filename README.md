@@ -17,7 +17,6 @@ Just run `middleclick-autoscroll`. This will open the configuration TUI that loo
   Applications covered           11 of 13
   Not identified                 1 - see the applications list
   Steam                          ON
-  Middle-click paste             off
   New applications               ON
   Last applied                   2 minutes ago
 
@@ -103,18 +102,6 @@ Browsers get the same thing but this time without "blink":
 --enable-features=MiddleClickAutoscroll
 
 But both do the same ¯\_(ツ)_/¯
-
-On KDE it also switches off the desktop's own middle-click paste, because
-otherwise middle click keeps pasting whatever you last selected everywhere that
-isn't Chromium, which is the exact thing we're trying to get away from. That's
-one line in kwinrc:
-
-[Wayland]
-EnablePrimarySelection=false
-
-Wayland only (X11 has no such switch, sorry) and it kicks in at the next login.
-`disable` puts it back, and `[4]` turns it off if you actually like pasting
-things with the middle button.
 
 New apps are picked up by a systemd path unit that watches the
 relevant directories. If you hate systemd; `middleclick-autoscroll apply` does the
