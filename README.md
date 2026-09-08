@@ -1,7 +1,7 @@
 # middleclick-autoscroll
 
-middleclick-autoscroll (what a great name, wow) is a CLI for Linux that enables autoscroll in every application that supports it.
-Works with browsers, Electron apps like Discord and Spotify, Steam, and anything else that runs on Chromium under the hood.
+middleclick-autoscroll (what a great name, wow) is a CLI for linux that enables autoscroll in every application that supports it.
+Works with browsers, electron apps like discord and spotify, steam, and anything else that runs on chromium under the hood.
 
 This tool looks at which of your apps run chromium under the hood and applies the necessary steps to get autoscrolling working. One install, one command and autoscroll _✨just works✨_ (like on windows).
 
@@ -33,7 +33,7 @@ Just run `middleclick-autoscroll`. This will open the configuration TUI that loo
 ```
 
 Normally you just need to press `[1]` and the magic is done.
-Pressing `[3]` lets you see every app that was found and toggle each individually. 
+Pressing `[3]` lets you see every app that was found and toggle each one individually. 
 
 ```
   Applications
@@ -49,7 +49,7 @@ Pressing `[3]` lets you see every app that was found and toggle each individuall
   Up/Down select - Space turns one on or off - q goes back
 ```
 
-`[4]` for more settings.
+You can also press `[4]` for more settings.
 
 ## How to install
 
@@ -78,7 +78,7 @@ echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felit
 sudo apt update && sudo apt install middleclick-autoscroll
 ```
 
-**openSUSE (idek who would use that)**
+**openSUSE (for both of you)**
 
 ```bash
 sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
