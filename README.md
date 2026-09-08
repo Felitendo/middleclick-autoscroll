@@ -5,6 +5,32 @@ Works with browsers, Electron apps like Discord and Spotify, Steam, and anything
 
 This tool looks at which of your apps run chromium under the hood and applies the necessary steps to get autoscrolling working. One install, one command and everything _✨just works✨_
 
+## How to use
+
+Just run `middleclick-autoscroll`. This will open the configuration TUI that looks like this:
+
+```
+  Middle-Click Autoscroll
+
+  Autoscroll                     ON
+
+  Applications covered           11 of 13
+  Not identified                 1 - see the applications list
+  Steam                          ON
+  New applications               ON
+  Last applied                   2 minutes ago
+
+  Applications pick this up the next time they are started.
+
+  [1] Turn autoscroll on or off
+  [2] Re-apply everything
+  [3] Applications
+  [4] Settings
+  [q] Quit
+
+  >
+```
+
 ## How to install
 
 **Arch (for the cachyos enjoyers)**
@@ -39,32 +65,6 @@ sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
 sudo zypper addrepo --gpgcheck --refresh \
   https://felitendo.github.io/middleclick-autoscroll/rpm middleclick-autoscroll
 sudo zypper install middleclick-autoscroll
-```
-
-## How to use
-
-Just run `middleclick-autoscroll`. This will open the configuration TUI that looks like this:
-
-```
-  Middle-Click Autoscroll
-
-  Autoscroll                     ON
-
-  Applications covered           11 of 13
-  Not identified                 1 - see the applications list
-  Steam                          ON
-  New applications               ON
-  Last applied                   2 minutes ago
-
-  Applications pick this up the next time they are started.
-
-  [1] Turn autoscroll on or off
-  [2] Re-apply everything
-  [3] Applications
-  [4] Settings
-  [q] Quit
-
-  >
 ```
 
 Normally you just need to press `[1]` and the magic is done.
