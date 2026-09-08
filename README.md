@@ -67,6 +67,24 @@ sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
 sudo dnf install middleclick-autoscroll
 ```
 
+**Bazzite and friends (for the ones who reboot to install things)**
+
+```bash
+sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
+  https://felitendo.github.io/middleclick-autoscroll/middleclick-autoscroll.repo
+sudo rpm-ostree install middleclick-autoscroll
+systemctl reboot
+```
+
+Don't want to layer a shell script into your image? Everything this thing does
+happens in `$HOME` anyway, so it can just live there too - no root, no reboot
+(needs `make`, otherwise grab it in a distrobox):
+
+```bash
+git clone https://github.com/Felitendo/middleclick-autoscroll
+cd middleclick-autoscroll && make install PREFIX=~/.local
+```
+
 **Debian (for the elderly)**
 
 ```bash

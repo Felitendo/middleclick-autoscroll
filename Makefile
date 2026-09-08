@@ -23,13 +23,17 @@ MANDIR       ?= $(DATADIR)/man
 # distribution that still keeps /lib separate from /usr/lib says so here - and
 # only guessed at when there is no systemd installed to ask.
 #
-# A build with a prefix of its own keeps the units under that prefix instead.
-# systemd searches $(PREFIX)/lib/systemd/user as well, and a file outside the
-# prefix it was asked for is not this build's to place.
+# A build with a prefix of its own keeps the units under that prefix instead,
+# and under share rather than lib. systemd searches both for a system prefix,
+# but only share for a home one: $XDG_DATA_HOME/systemd/user is a search path
+# and ~/.local/lib/systemd/user is not, so an install into ~/.local that put
+# the units in lib would leave the watcher impossible to enable. That prefix is
+# the one an atomic distribution leaves a user - there is no writing to /usr on
+# Bazzite or Silverblue without layering a package and rebooting.
 ifeq ($(PREFIX),/usr)
 USERUNITDIR  ?= $(shell pkg-config --variable=systemduserunitdir systemd 2>/dev/null || echo /usr/lib/systemd/user)
 else
-USERUNITDIR  ?= $(PREFIX)/lib/systemd/user
+USERUNITDIR  ?= $(DATADIR)/systemd/user
 endif
 
 LINGUAS      := de
