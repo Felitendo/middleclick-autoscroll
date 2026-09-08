@@ -17,8 +17,8 @@ Just run `middleclick-autoscroll`. This will open the configuration TUI that loo
   Applications covered           11 of 13
   Not identified                 1 - see the applications list
   Steam                          ON
-  Middle-click paste             off
   New applications               ON
+  Middle-click paste             off
   Last applied                   2 minutes ago
 
   Applications pick this up the next time they are started.

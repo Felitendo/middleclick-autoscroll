@@ -186,6 +186,14 @@ mca_ui_status() {
 		fi
 	fi
 
+	if mca_watch_available; then
+		if mca_watch_enabled; then
+			_mca_row "$(mca_msg "New applications")" "$(_mca_onoff yes)"
+		else
+			_mca_row "$(mca_msg "New applications")" "$(_mca_onoff no)"
+		fi
+	fi
+
 	# Not an ON/OFF like the rows around it: what is being reported is the state
 	# of the paste, not of a switch, and off is the state this program is after.
 	if mca_kde_available; then
@@ -195,14 +203,6 @@ mca_ui_status() {
 		else
 			_mca_row "$(mca_msg "Middle-click paste")" \
 				"${MCA_C_DIM}$(mca_msg "on")${MCA_C_RESET}"
-		fi
-	fi
-
-	if mca_watch_available; then
-		if mca_watch_enabled; then
-			_mca_row "$(mca_msg "New applications")" "$(_mca_onoff yes)"
-		else
-			_mca_row "$(mca_msg "New applications")" "$(_mca_onoff no)"
 		fi
 	fi
 
