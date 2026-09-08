@@ -67,7 +67,7 @@ sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
 sudo dnf install middleclick-autoscroll
 ```
 
-**Bazzite (for the anxious)**
+**Bazzite (for the reboot enjoyers)**
 
 ```bash
 sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
