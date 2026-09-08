@@ -172,6 +172,35 @@ and has a configuration file with a slot for extra arguments; that slot is
 where the flag goes. Installed as a plain package, a Flatpak or a snap, it is
 an ordinary desktop entry and needs nothing special.
 
+# MIDDLE-CLICK PASTE
+
+Inside a Chromium application the argument settles this on its own: with
+autoscroll on, Blink stops pasting the primary selection on middle click,
+because the button is doing something else now. Everywhere else on the desktop
+middle click goes on pasting, so the desktop's own switch for it is turned off
+too.
+
+KDE has such a switch, and only for a Wayland session, where the paste is a
+protocol the compositor either offers or does not:
+
+	~/.config/kwinrc, [Wayland], EnablePrimarySelection=false
+
+It is written with *kwriteconfig6*, the same tool System Settings uses, because
+kwinrc has a cascade behind it and entries a distribution can mark immutable;
+an edit that reaches past all that writes something KDE goes on to ignore. KWin
+reads the key once, while it starts, so the change is true from the next login
+on rather than straight away.
+
+What the key said before is recorded, and *disable* puts that back. A key that
+already said *false* before any of this is left alone and not recorded either,
+so a paste the user switched off themselves is never switched back on.
+
+On X11 there is nothing to switch. The primary selection is part of X itself
+and every toolkit reaches for it on its own; no one place can say no. The
+status screen leaves the row out where there is nothing to report.
+
+Turn it off under *Settings* to keep the desktop's middle-click paste.
+
 # WHAT CANNOT BE DETECTED
 
 An AppImage keeps its payload in a compressed filesystem, so there is no way to
@@ -190,6 +219,11 @@ _~/.local/state/middleclick-autoscroll/ledger_
 _~/.local/state/middleclick-autoscroll/backup/_
 	Copies of the files that are edited in place rather than shadowed.
 
+_~/.config/kwinrc_
+	KDE's own configuration. One key in it, *EnablePrimarySelection*, is
+	written when the desktop's middle-click paste is turned off, and put
+	back by *disable*.
+
 _~/.cache/middleclick-autoscroll/detect_
 	Which programs were found to be Chromium, keyed by size and modification
 	time. Safe to delete.
@@ -207,7 +241,7 @@ up at the next *apply* rather than on their own.
 
 # SEE ALSO
 
-*systemctl*(1), *flatpak*(1), *snap*(8)
+*systemctl*(1), *flatpak*(1), *snap*(8), *kwriteconfig6*(1)
 
 # AUTHORS
 

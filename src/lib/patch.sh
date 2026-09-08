@@ -646,6 +646,10 @@ mca_revert_all() {
 				mca_steam_revert "$path" "$detail" \
 					&& MCA_CHANGES=$(( MCA_CHANGES + 1 ))
 				;;
+			kwin)
+				mca_kde_paste_revert "$path" "$detail" \
+					&& MCA_CHANGES=$(( MCA_CHANGES + 1 ))
+				;;
 		esac
 	done < <(tac "$MCA_LEDGER" 2>/dev/null)
 

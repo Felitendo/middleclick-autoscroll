@@ -186,6 +186,18 @@ mca_ui_status() {
 		fi
 	fi
 
+	# Not an ON/OFF like the rows around it: what is being reported is the state
+	# of the paste, not of a switch, and off is the state this program is after.
+	if mca_kde_available; then
+		if [[ "$(mca_kde_read)" == false ]]; then
+			_mca_row "$(mca_msg "Middle-click paste")" \
+				"${MCA_C_GREEN}$(mca_msg "off")${MCA_C_RESET}"
+		else
+			_mca_row "$(mca_msg "Middle-click paste")" \
+				"${MCA_C_DIM}$(mca_msg "on")${MCA_C_RESET}"
+		fi
+	fi
+
 	if mca_watch_available; then
 		if mca_watch_enabled; then
 			_mca_row "$(mca_msg "New applications")" "$(_mca_onoff yes)"
@@ -216,6 +228,7 @@ MCA_SETTINGS=(
 	"PatchAutostart|bool|yes|Programs that start themselves at login"
 	"PatchSteam|bool|yes|Steam"
 	"PatchSpotify|bool|yes|Spotify"
+	"DisablePaste|bool|yes|Turn off KDE's middle-click paste"
 	"WatchNewApps|bool|yes|Apply to newly installed applications"
 	"ExtraFlags|text||Additional Chromium arguments"
 )

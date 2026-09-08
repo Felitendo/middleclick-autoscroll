@@ -278,9 +278,12 @@ mca_state_write() {
 #   shadow  <generated desktop entry>   <source entry it was generated from>
 #   inplace <edited file>               <basename of its backup copy>
 #   flags   <flag file>                 created | appended | merged
+#   kwin    <kwinrc>                    what EnablePrimarySelection said before
 #
-# `inplace` and `flags` differ in how they are undone: a backup is restored
-# wholesale, a flag file only loses the one line that was added to it.
+# The kinds differ in how they are undone: a backup is restored wholesale, a
+# flag file only loses the one line that was added to it, and kwinrc gets one
+# key written back - it is a file KDE writes to itself, and putting a whole
+# copy of it back would take everything else settled since with it.
 
 mca_ledger_add() {
 	local kind="$1" path="$2" detail="${3:-}"
@@ -301,6 +304,15 @@ mca_ledger_add() {
 mca_ledger_has() {
 	[[ -f $MCA_LEDGER ]] || return 1
 	awk -F'\t' -v p="$1" '$2 == p { found = 1 } END { exit !found }' "$MCA_LEDGER"
+}
+
+# mca_ledger_detail <path>
+# The third column of that file's line, empty when the ledger has none. What it
+# means is the kind's business; for `kwin` it is the value to put back.
+mca_ledger_detail() {
+	[[ -f $MCA_LEDGER ]] || return 1
+	awk -F'\t' -v p="$1" '$2 == p { d = $3 } END { if (!length(d)) exit 1; print d }' \
+		"$MCA_LEDGER"
 }
 
 mca_ledger_forget() {

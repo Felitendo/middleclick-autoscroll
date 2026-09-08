@@ -144,6 +144,7 @@ mca_config_load() {
 	CFG_STEAM=no;      mca_config_bool PatchSteam       yes && CFG_STEAM=yes
 	CFG_SPOTIFY=no;    mca_config_bool PatchSpotify     yes && CFG_SPOTIFY=yes
 	CFG_WATCH=no;      mca_config_bool WatchNewApps     yes && CFG_WATCH=yes
+	CFG_PASTE=no;      mca_config_bool DisablePaste     yes && CFG_PASTE=yes
 
 	CFG_EXTRA_FLAGS="$(mca_config_get ExtraFlags '')"
 

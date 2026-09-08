@@ -63,6 +63,9 @@ msgstr "%d – siehe Anwendungsliste"
 msgid "Steam"
 msgstr "Steam"
 
+msgid "Middle-click paste"
+msgstr "Mittelklick-Einfügen"
+
 msgid "New applications"
 msgstr "Neue Anwendungen"
 
@@ -111,6 +114,9 @@ msgstr "Programme, die sich beim Anmelden selbst starten"
 
 msgid "Spotify"
 msgstr "Spotify"
+
+msgid "Turn off KDE's middle-click paste"
+msgstr "KDEs Mittelklick-Einfügen abschalten"
 
 msgid "Apply to newly installed applications"
 msgstr "Auf neu installierte Anwendungen anwenden"
@@ -178,6 +184,9 @@ msgstr "Steam startet seine Oberfläche auf eine Art, die diese Version nicht ä
 
 msgid "Steam's interface cannot be given the flag without leaving a file Steam would reinstall; the change has been taken back."
 msgstr "Steams Oberfläche lässt sich das Flag nicht geben, ohne eine Datei zu hinterlassen, die Steam neu installieren würde; die Änderung wurde zurückgenommen."
+
+msgid "Middle click stops pasting at the next login."
+msgstr "Mittelklick fügt ab der nächsten Anmeldung nichts mehr ein."
 
 
 #. Help

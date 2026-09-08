@@ -63,6 +63,9 @@ msgstr ""
 msgid "Steam"
 msgstr ""
 
+msgid "Middle-click paste"
+msgstr ""
+
 msgid "New applications"
 msgstr ""
 
@@ -110,6 +113,9 @@ msgid "Programs that start themselves at login"
 msgstr ""
 
 msgid "Spotify"
+msgstr ""
+
+msgid "Turn off KDE's middle-click paste"
 msgstr ""
 
 msgid "Apply to newly installed applications"
@@ -177,6 +183,9 @@ msgid "Steam starts its interface in a way this version cannot change without St
 msgstr ""
 
 msgid "Steam's interface cannot be given the flag without leaving a file Steam would reinstall; the change has been taken back."
+msgstr ""
+
+msgid "Middle click stops pasting at the next login."
 msgstr ""
 
 

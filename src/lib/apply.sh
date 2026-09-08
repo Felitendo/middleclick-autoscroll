@@ -134,6 +134,11 @@ mca_apply() {
 
 	[[ $CFG_SPOTIFY == yes ]] && mca_spotify_apply
 
+	# Not about any one application: middle click goes on pasting everywhere
+	# else on the desktop, and KDE is the one desktop that can be told not to.
+	# See kde.sh.
+	[[ $CFG_PASTE == yes ]] && mca_kde_paste_apply
+
 	mca_prune_orphans
 
 	if (( MCA_CHANGES )) && mca_have update-desktop-database; then

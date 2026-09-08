@@ -17,7 +17,7 @@ set -uo pipefail
 
 MCA_LIBDIR="${MCA_LIBDIR:-@LIBDIR@}"
 
-for _mod in common config detect patch steam apply menu; do
+for _mod in common config detect patch steam kde apply menu; do
 	# shellcheck source=/dev/null
 	if ! source "$MCA_LIBDIR/$_mod.sh"; then
 		printf 'middleclick-autoscroll: cannot load %s/%s.sh\n' "$MCA_LIBDIR" "$_mod" >&2
