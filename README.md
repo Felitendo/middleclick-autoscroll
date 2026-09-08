@@ -3,7 +3,7 @@
 middleclick-autoscroll (what a great name, wow) is a CLI for Linux that enables autoscroll in every application that supports it.
 Works with browsers, Electron apps like Discord and Spotify, Steam, and anything else that runs on Chromium under the hood.
 
-This tool looks at which of your apps run chromium under the hood and applies the necessary steps to get autoscrolling working. One install, one command and autoscroll _✨just works✨_ (like on windows)
+This tool looks at which of your apps run chromium under the hood and applies the necessary steps to get autoscrolling working. One install, one command and autoscroll _✨just works✨_ (like on windows).
 
 ## How to use
 
