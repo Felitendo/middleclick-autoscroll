@@ -117,6 +117,13 @@ New apps are picked up by a systemd path unit that watches the
 relevant directories. If you hate systemd; `middleclick-autoscroll apply` does the
 same thing manually.
 
+AppImages get looked into as well. The payload is a squashfs image glued onto
+the runtime, and squashfs keeps a small table with the name of every file in
+there - so that table gets read and unpacked (a few kb, nothing is extracted
+and the thing is never run) and the Chromium files are looked for in it. An
+Electron AppImage is covered like any other app; a Tauri one is left alone,
+because WebKitGTK simply has no autoscroll to switch on.
+
 ## Commands
 
 | Command | |

@@ -201,11 +201,37 @@ status screen leaves the row out where there is nothing to report.
 
 Turn it off under *Settings* to keep the desktop's middle-click paste.
 
-# WHAT CANNOT BE DETECTED
+# APPIMAGES
 
-An AppImage keeps its payload in a compressed filesystem, so there is no way to
-tell from the outside whether it contains Chromium. Those are listed as *cannot
-tell* and left alone until they are switched on from the applications screen.
+An AppImage is the AppImage runtime, an ordinary executable, with a squashfs
+image appended to it. The payload is compressed, so none of the files that
+identify Chromium is on disk where it could be found.
+
+The names are, though. squashfs keeps the name of everything it holds in one
+table of its own, a few kilobytes of it, and a name is all this question needs -
+so that table is read and decompressed in place. Nothing is unpacked, and the
+image is never run: this can happen from the watcher, and starting a program
+because it was installed is not something a scan gets to do.
+
+Two kinds of image are still out of reach. One is packed with *lzo* or *lz4*,
+which squashfs stores as bare blocks that neither tool will read without the
+framing their own file formats add. The other is the original AppImage layout,
+which is an ISO9660 filesystem rather than a squashfs one. Both are listed as
+*cannot tell* and left alone until they are switched on from the applications
+screen.
+
+# WHAT HAS NO FLAG AT ALL
+
+Autoscroll is a Blink feature, so only an application drawn by Blink can be
+given it. An application built on WebKitGTK - which is what Tauri uses on
+Linux, and GNOME Web, and anything else linked against libwebkit2gtk - is not
+one of those. WebKit has no equivalent feature to ask for, on any command line
+or in any configuration file.
+
+Such an application is identified as what it is and then left out of the list
+entirely, rather than being offered as something that could be switched on. An
+application that is absent from *list* is absent because there is nothing this
+tool could do for it.
 
 # FILES
 
@@ -226,7 +252,10 @@ _~/.config/kwinrc_
 
 _~/.cache/middleclick-autoscroll/detect_
 	Which programs were found to be Chromium, keyed by size and modification
-	time. Safe to delete.
+	time. Its first line says which version of the program wrote it, and a
+	file from an older one is ignored rather than trusted - an entry for a
+	file that has not changed would otherwise never be looked at again.
+	Safe to delete.
 
 # ENVIRONMENT
 
@@ -238,6 +267,11 @@ _~/.cache/middleclick-autoscroll/detect_
 Bash 4.2 or newer and GNU coreutils. The watcher needs a systemd user session;
 without one everything else works and applications installed later are picked
 up at the next *apply* rather than on their own.
+
+*gzip* is what reads the name table of an AppImage, and *xz* or *zstd* the ones
+packed with those instead. None of the three is required: an image whose
+compressor has no tool installed is listed as *cannot tell*, exactly like the
+two formats there is no reader for at all.
 
 # SEE ALSO
 

@@ -21,6 +21,22 @@ MCA_MARKERS=(
 	libvk_swiftshader.so LICENSES.chromium.html libcef.so
 )
 
+# The markers that still mean something when the whole of a tree is searched
+# rather than just the directory the binary sits in - inside a Flatpak, a snap
+# or an AppImage, where there is no "next to the binary" to look at.
+#
+# Three of the names above are missing here on purpose. icudtl.dat is ICU's
+# data file and not Chromium's: a Flutter application ships one in data/, and
+# a whole-tree search would find it. snapshot_blob.bin and resources.pak are
+# the same kind of shared name. Next to a binary they are still evidence,
+# because nothing but Chromium unpacks its payload there - a few directories
+# deeper they are not.
+MCA_MARKERS_STRICT=(
+	chrome_crashpad_handler chrome-sandbox chrome_100_percent.pak
+	v8_context_snapshot.bin libvk_swiftshader.so LICENSES.chromium.html
+	libcef.so app.asar
+)
+
 # Shared directories, where a marker belongs to the system rather than to the
 # program that happens to live there. An application ships its payload in a
 # directory of its own; nothing unpacks Chromium straight into /usr/lib.
@@ -309,14 +325,27 @@ _mca_stat_batch() {
 	return 0
 }
 
+# The first line of the cache file, and the reason it is there: the verdicts
+# below it are keyed on size and mtime, so an entry for a file that has not
+# changed is never looked at again. A cache written when a verdict meant
+# something else - before an AppImage could come out as anything but "no" -
+# would therefore keep answering the old way forever. Bumping this is how such
+# a cache gets dropped instead.
+MCA_CACHE_FORMAT='# middleclick-autoscroll detect 2'
+
 _mca_cache_load() {
-	local path stamp verdict
+	local path stamp verdict first=1
 
 	(( MCA_CACHE_LOADED )) && return 0
 	MCA_CACHE_LOADED=1
 
 	[[ -r "$MCA_CACHEDIR/detect" ]] || return 0
 	while IFS=$'\t' read -r path stamp verdict; do
+		if (( first )); then
+			first=0
+			[[ $path == "$MCA_CACHE_FORMAT" ]] || return 0
+			continue
+		fi
 		[[ -n $path && -n $stamp ]] || continue
 		MCA_DETECT_CACHE["$path"]="$stamp"$'\t'"$verdict"
 	done < "$MCA_CACHEDIR/detect"
@@ -331,6 +360,7 @@ mca_cache_flush() {
 	mkdir -p "$MCA_CACHEDIR" 2>/dev/null || return 0
 
 	tmp="$(mktemp "$MCA_CACHEDIR/detect.XXXXXX")" || return 0
+	printf '%s\n' "$MCA_CACHE_FORMAT" > "$tmp"
 	for path in "${!MCA_DETECT_CACHE[@]}"; do
 		entry="${MCA_DETECT_CACHE[$path]}"
 		printf '%s\t%s\n' "$path" "$entry" >> "$tmp"
@@ -360,6 +390,26 @@ _mca_has_markers() {
 	done
 	[[ -e "$dir/resources/app.asar" || -e "$dir/app.asar" ]] && return 0
 	return 1
+}
+
+# _mca_find_markers <directory> <depth>
+# The same question for a whole tree, which is the shape a Flatpak, a snap and
+# an unpacked AppImage come in: everything the application ships is somewhere
+# under one root and there is no single directory that is "next to the binary".
+# Hence the narrower list - see MCA_MARKERS_STRICT.
+_mca_find_markers() {
+	local root="$1" depth="$2" m
+	local -a names=()
+
+	[[ -d $root ]] || return 1
+
+	for m in "${MCA_MARKERS_STRICT[@]}"; do
+		(( ${#names[@]} )) && names+=(-o)
+		names+=(-name "$m")
+	done
+
+	[[ -n "$(find "$root" -maxdepth "$depth" \
+		\( "${names[@]}" \) -print -quit 2>/dev/null)" ]]
 }
 
 # The plain assignments the script made before it handed over, for
@@ -521,18 +571,295 @@ mca_flags_candidates() {
 	fi
 }
 
-# mca_is_chromium <program>
-# Succeeds when the program is a Chromium, CEF or Electron process.
-mca_is_chromium() {
-	local prog="$1" verdict real stamp cached
+# ---------------------------------------------------------------------------
+# Looking inside an AppImage
+# ---------------------------------------------------------------------------
+#
+# An AppImage is the AppImage runtime - an ordinary ELF executable - with a
+# squashfs image appended to it. The payload is compressed, so nothing the
+# application ships is on disk where the marker check could find it, and for a
+# long time that made every AppImage a "cannot tell".
+#
+# It does not have to be. squashfs keeps the names of everything it holds in
+# one table of its own, the table is a few kilobytes, and the names are the
+# whole of what this question needs. So that table is read and inflated here -
+# rather than unpacking a hundred megabytes, and rather than running the image
+# to ask it, which is the one thing a scan started by a path unit must never
+# do.
+#
+# Everything below fails closed. The moment a field is not where it should be,
+# or the compressor is one there is no tool for, the answer goes back to
+# "cannot tell" and the application is left to the applications screen.
 
-	[[ -n $prog && -e $prog ]] || return 1
+# _mca_bytes <file> <offset> <count>
+# Count bytes from an offset, as numbers, in MCA_BYTES. od rather than a shell
+# read because a variable cannot hold a NUL byte and these headers are full of
+# them - and a whole header at a time rather than a field at a time, because
+# the first question below is asked about every program on the system and one
+# od per field would be four forks per program.
+MCA_BYTES=()
+
+_mca_bytes() {
+	local file="$1" off="$2" count="$3"
+
+	MCA_BYTES=()
+
+	# read stops on end of input rather than on the delimiter it was given, so
+	# it reports failure for input that is perfectly complete. The count is
+	# the check.
+	read -r -d '' -a MCA_BYTES \
+		< <(od -An -tu1 -j"$off" -N"$count" -v -- "$file" 2>/dev/null)
+
+	(( ${#MCA_BYTES[@]} == count ))
+}
+
+# _mca_slice <file> <offset> <length>
+# Length bytes from an offset, on stdout.
+_mca_slice() {
+	dd if="$1" bs=65536 iflag=skip_bytes,count_bytes \
+		skip="$2" count="$3" status=none 2>/dev/null
+}
+
+# _mca_word <index>
+# One 64-bit little-endian field out of MCA_BYTES, in MCA_WORD. Assigns rather
+# than prints for the same reason _mca_bytes reads a whole header at a time:
+# printing means a command substitution, and that is a fork per field.
+#
+# Fails for the all-ones value squashfs writes down for a table that is not in
+# the image, which is a case the callers below have to tell from a real offset
+# and bash arithmetic - signed, 64-bit - cannot represent.
+MCA_WORD=0
+
+_mca_word() {
+	local at="$1"
+
+	(( ${#MCA_BYTES[@]} >= at + 8 )) || return 1
+	(( MCA_BYTES[at+7] == 255 && MCA_BYTES[at+6] == 255 )) && return 1
+
+	MCA_WORD=$(( (MCA_BYTES[at] | MCA_BYTES[at+1] << 8 \
+		| MCA_BYTES[at+2] << 16 | MCA_BYTES[at+3] << 24) \
+		| ((MCA_BYTES[at+4] | MCA_BYTES[at+5] << 8 \
+		| MCA_BYTES[at+6] << 16 | MCA_BYTES[at+7] << 24) << 32) ))
+	return 0
+}
+
+# _mca_appimage_offset <file>
+# Where the appended image starts, in MCA_APPIMAGE_AT: directly after the ELF,
+# which is where its section header table ends. This is how the runtime works
+# it out for --appimage-offset, and it is exact.
+#
+# Searching for the squashfs magic instead would not be: the runtime carries a
+# copy of it in its own code. Neither is the AppImage magic at byte 8 of the
+# ELF header a way in - it is there to be zeroed, and a build pipeline that
+# does not want its image picked up by a desktop integration daemon does
+# exactly that. So the offset is computed for any ELF at all and the caller
+# finds out whether there is an image at it.
+MCA_APPIMAGE_AT=0
+
+_mca_appimage_offset() {
+	local shoff shentsize shnum
+
+	MCA_APPIMAGE_AT=0
+	_mca_bytes "$1" 0 64 || return 1
+
+	# \x7fELF, and then the class byte: 2 for the 64-bit header, 1 for the
+	# 32-bit one, which puts every field after it somewhere else.
+	(( MCA_BYTES[0] == 127 && MCA_BYTES[1] == 69 \
+		&& MCA_BYTES[2] == 76 && MCA_BYTES[3] == 70 )) || return 1
+
+	if (( MCA_BYTES[4] == 2 )); then
+		_mca_word 40 || return 1
+		shoff="$MCA_WORD"
+		shentsize=$(( MCA_BYTES[58] | MCA_BYTES[59] << 8 ))
+		shnum=$(( MCA_BYTES[60] | MCA_BYTES[61] << 8 ))
+	elif (( MCA_BYTES[4] == 1 )); then
+		shoff=$(( MCA_BYTES[32] | MCA_BYTES[33] << 8 \
+			| MCA_BYTES[34] << 16 | MCA_BYTES[35] << 24 ))
+		shentsize=$(( MCA_BYTES[46] | MCA_BYTES[47] << 8 ))
+		shnum=$(( MCA_BYTES[48] | MCA_BYTES[49] << 8 ))
+	else
+		return 1
+	fi
+
+	(( shoff > 0 && shentsize > 0 && shnum > 0 )) || return 1
+	MCA_APPIMAGE_AT=$(( shoff + shentsize * shnum ))
+	return 0
+}
+
+# _mca_inflate <compressor> <file> <offset> <length>
+# One squashfs metadata block, decompressed onto stdout.
+#
+# lzo and lz4 are missing because squashfs stores them as bare blocks and
+# neither lzop nor the lz4 tool will read one without the framing their own
+# file format puts around it. An image compressed with either comes out as
+# "cannot tell", which is where it started.
+_mca_inflate() {
+	local comp="$1" file="$2" off="$3" len="$4"
+
+	case "$comp" in
+		1)
+			# squashfs stores a zlib stream and gzip only reads its own
+			# container, but underneath both are the same deflate data with a
+			# different wrapper around it - so the wrapper is swapped: zlib's
+			# two header bytes are dropped and a minimal gzip header put in
+			# front. gzip then writes every byte of the block and complains
+			# about the trailer it did not get, which is why its status is
+			# thrown away here and the check is on the output instead.
+			(( len > 2 )) || return 1
+			{
+				printf '\037\213\010\000\000\000\000\000\000\003'
+				_mca_slice "$file" $(( off + 2 )) $(( len - 2 ))
+			} | { gzip -dc 2>/dev/null || true; }
+			;;
+		2)
+			mca_have xz || return 1
+			_mca_slice "$file" "$off" "$len" \
+				| { xz -dc --format=lzma 2>/dev/null || true; }
+			;;
+		4)
+			mca_have xz || return 1
+			_mca_slice "$file" "$off" "$len" | { xz -dc 2>/dev/null || true; }
+			;;
+		6)
+			mca_have zstd || return 1
+			_mca_slice "$file" "$off" "$len" | { zstd -dc 2>/dev/null || true; }
+			;;
+		*)  return 1 ;;
+	esac
+}
+
+# _mca_squashfs_names <file> <offset>
+# The directory table of the image at that offset, inflated onto stdout. It is
+# not parsed: the names sit in it as plain text between the records that
+# describe them, and a name is all the caller is looking for.
+#
+# Fails unless the walk lands exactly on the end of the table. That is the
+# integrity check - the block sizes adding up to the table's own length is
+# what says the fields were read from a real superblock and that the output is
+# the whole of the names rather than some of them - and it is why the caller
+# has to collect this before trusting it, never pipe it.
+_mca_squashfs_names() {
+	local file="$1" base="$2"
+	local comp dir_start end field header size pos
+
+	_mca_bytes "$file" "$base" 96 || return 1
+	comp=$(( MCA_BYTES[20] | MCA_BYTES[21] << 8 ))
+
+	_mca_word 72 || return 1
+	dir_start="$MCA_WORD"
+	(( dir_start > 0 )) || return 1
+
+	# Where the names stop: the first table squashfs writes after them. Which
+	# one that is depends on the image - there is no fragment table when
+	# nothing was packed into a fragment, and no export table unless it was
+	# asked for - so they are tried in the order they are written and the
+	# first one that is actually there wins. bytes_used closes the list for an
+	# image that has none of them.
+	end=0
+	for field in 80 88 48 40; do
+		_mca_word "$field" || continue
+		(( MCA_WORD > dir_start )) || continue
+		end="$MCA_WORD"
+		break
+	done
+	(( end > dir_start )) || return 1
+
+	# Names for a hundred thousand files would still fit in a fraction of
+	# this. A table that claims more than it is a table that was misread.
+	(( end - dir_start > 8388608 )) && return 1
+
+	pos=$(( base + dir_start ))
+	end=$(( base + end ))
+
+	while (( pos < end )); do
+		_mca_bytes "$file" "$pos" 2 || return 1
+		header=$(( MCA_BYTES[0] | MCA_BYTES[1] << 8 ))
+		size=$(( header & 0x7fff ))
+		(( size > 0 && pos + 2 + size <= end )) || return 1
+
+		# The top bit says the block was stored as it is, which squashfs does
+		# for the ones compression made no smaller.
+		if (( header & 0x8000 )); then
+			_mca_slice "$file" $(( pos + 2 )) "$size" || return 1
+		else
+			_mca_inflate "$comp" "$file" $(( pos + 2 )) "$size" || return 1
+		fi
+
+		pos=$(( pos + 2 + size ))
+	done
+
+	(( pos == end ))
+}
+
+# _mca_appimage_verdict <file>
+# What the image appended to this file contains, left in MCA_APPIMAGE:
+#   yes      - Chromium, CEF or Electron
+#   no       - the names of everything inside were read and none of them is
+#   unknown  - there is an image, but its contents could not be read
+#   none     - not an AppImage; there is nothing appended to this ELF
+MCA_APPIMAGE=none
+
+_mca_appimage_verdict() {
+	local file="$1" base names m
+	local -a args=()
+
+	MCA_APPIMAGE=none
+
+	_mca_appimage_offset "$file" || return 0
+	base="$MCA_APPIMAGE_AT"
+
+	# hsqs, the squashfs magic. Nothing there means nothing was appended, so
+	# this is an ordinary executable and not an AppImage at all.
+	_mca_bytes "$file" "$base" 4 || return 0
+	(( MCA_BYTES[0] == 104 && MCA_BYTES[1] == 115 \
+		&& MCA_BYTES[2] == 113 && MCA_BYTES[3] == 115 )) || return 0
+
+	# From here on there is an image, so the worst this can end on is "cannot
+	# tell" - never "no", which would be an answer about contents that were
+	# never read.
+	MCA_APPIMAGE=unknown
+
+	names="$(mktemp "${TMPDIR:-/tmp}/mca-names.XXXXXX")" || return 0
+
+	# Nothing at all in the table means every block failed to inflate - a
+	# compressor whose tool is not installed - which is a "cannot tell" too.
+	if _mca_squashfs_names "$file" "$base" > "$names" 2>/dev/null \
+		&& [[ -s $names ]]
+	then
+		for m in "${MCA_MARKERS_STRICT[@]}"; do args+=(-e "$m"); done
+		if grep -qaF "${args[@]}" -- "$names"; then
+			MCA_APPIMAGE=yes
+		else
+			MCA_APPIMAGE=no
+		fi
+	fi
+
+	rm -f -- "$names"
+	return 0
+}
+
+# mca_detect_verdict <program>
+# What running this program starts, left in MCA_VERDICT:
+#   yes      - Chromium, CEF or Electron
+#   no       - something else
+#   unknown  - an image whose payload could not be read, so neither answer has
+#              been earned and the applications screen offers it as a choice
+#
+# Assigns rather than returns three states through an exit code, and is the one
+# place the memo and the on-disk cache are consulted.
+MCA_VERDICT=''
+
+mca_detect_verdict() {
+	local prog="$1" real stamp cached
+
+	MCA_VERDICT=no
+	[[ -n $prog && -e $prog ]] || return 0
 
 	# Memoized under the path as given, so the same launcher named twice in a
 	# scan costs nothing at all the second time.
 	if [[ -n ${MCA_DETECT_MEMO[$prog]+set} ]]; then
-		[[ ${MCA_DETECT_MEMO[$prog]} == yes ]]
-		return $?
+		MCA_VERDICT="${MCA_DETECT_MEMO[$prog]}"
+		return 0
 	fi
 
 	_mca_cache_load
@@ -546,25 +873,44 @@ mca_is_chromium() {
 	if [[ -n $stamp && -n ${MCA_DETECT_CACHE[$prog]+set} ]]; then
 		cached="${MCA_DETECT_CACHE[$prog]}"
 		if [[ "${cached%%$'\t'*}" == "$stamp" ]]; then
-			verdict="${cached#*$'\t'}"
-			MCA_DETECT_MEMO[$prog]="$verdict"
-			[[ $verdict == yes ]]
-			return $?
+			MCA_VERDICT="${cached#*$'\t'}"
+			MCA_DETECT_MEMO[$prog]="$MCA_VERDICT"
+			return 0
 		fi
 	fi
 
 	real="$(readlink -f -- "$prog" 2>/dev/null)" || real="$prog"
 
-	verdict=no
-	if _mca_detect_uncached "$real"; then verdict=yes; fi
+	MCA_DETECT_UNSURE=0
+	if _mca_detect_uncached "$real"; then
+		MCA_VERDICT=yes
+	elif (( MCA_DETECT_UNSURE )); then
+		MCA_VERDICT=unknown
+	else
+		MCA_VERDICT=no
+	fi
 
-	MCA_DETECT_MEMO[$prog]="$verdict"
+	MCA_DETECT_MEMO[$prog]="$MCA_VERDICT"
 	if [[ -n $stamp ]]; then
-		MCA_DETECT_CACHE["$prog"]="$stamp"$'\t'"$verdict"
+		MCA_DETECT_CACHE["$prog"]="$stamp"$'\t'"$MCA_VERDICT"
 		MCA_CACHE_DIRTY=1
 	fi
-	[[ $verdict == yes ]]
+	return 0
 }
+
+# mca_is_chromium <program>
+# Succeeds when the program is a Chromium, CEF or Electron process. "Cannot
+# tell" is not that, so it fails here - anything that has to treat the two
+# differently asks mca_detect_verdict instead.
+mca_is_chromium() {
+	mca_detect_verdict "$1"
+	[[ $MCA_VERDICT == yes ]]
+}
+
+# Set by _mca_detect_uncached when it reaches the end without finding anything
+# and the reason is that something could not be read, rather than that there
+# was nothing there. Only mca_detect_verdict reads it, straight after the call.
+MCA_DETECT_UNSURE=0
 
 _mca_detect_uncached() {
 	local real="$1" depth="${2:-0}" dir target
@@ -590,14 +936,27 @@ _mca_detect_uncached() {
 	_mca_has_markers "$dir" && return 0
 	[[ ${dir##*/} == bin ]] && _mca_has_markers "${dir%/*}" && return 0
 
+	# An AppImage keeps all of that inside a filesystem appended to itself, so
+	# there is nothing next to the binary to find - but the names of everything
+	# in there can be read, and that settles it either way.
+	_mca_appimage_verdict "$real"
+	case "$MCA_APPIMAGE" in
+		yes) return 0 ;;
+		no)  return 1 ;;
+	esac
+
 	# Last resort: Chromium's own argument table is in the binary. -m1 stops at
 	# the first hit, so this reads far less than the file size suggests.
-	#
-	# AppImages are the one thing this cannot see through - their payload is a
-	# compressed filesystem - which is why they come out as unknown and are
-	# left to the applications screen.
 	grep -qaFm1 -- 'enable-blink-features' "$real" 2>/dev/null && return 0
 	grep -qaFm1 -- 'CHROME_VERSION_EXTRA' "$real" 2>/dev/null && return 0
+
+	# What is left is an image that could not be read - an unsupported
+	# compressor - or the older AppImage layout, which is an ISO9660 filesystem
+	# and has no name table of this shape at all. Either way the answer is not
+	# "no", it is "nobody looked".
+	if [[ $MCA_APPIMAGE == unknown || $real == *.AppImage || $real == *.appimage ]]; then
+		MCA_DETECT_UNSURE=1
+	fi
 
 	return 1
 }
@@ -717,10 +1076,12 @@ mca_scan() {
 			# Steam is Chromium inside, but nothing about it can be changed
 			# from a command line argument; it has its own module.
 			kind=steam
-		elif mca_is_chromium "$prog"; then
-			(( c_browser[i] )) && kind=browser || kind=app
-		elif [[ $prog == *.AppImage || $prog == *.appimage ]]; then
-			kind=unknown
+		else
+			mca_detect_verdict "$prog"
+			case "$MCA_VERDICT" in
+				yes)     (( c_browser[i] )) && kind=browser || kind=app ;;
+				unknown) kind=unknown ;;
+			esac
 		fi
 
 		[[ $kind == no ]] && continue
@@ -813,13 +1174,7 @@ mca_snap_is_chromium() {
 
 	for d in "${MCA_SNAP_DIRS[@]}"; do
 		root="$d/$name/current"
-		[[ -d $root ]] || continue
-		if [[ -n "$(find "$root" -maxdepth 5 \
-			\( -name 'chrome_crashpad_handler' -o -name 'app.asar' \
-			   -o -name 'libcef.so' -o -name 'v8_context_snapshot.bin' \
-			   -o -name 'chrome-sandbox' \) \
-			-print -quit 2>/dev/null)" ]]
-		then
+		if _mca_find_markers "$root" 5; then
 			MCA_DETECT_MEMO[snap:$name]=yes
 			return 0
 		fi
@@ -842,12 +1197,7 @@ mca_flatpak_is_chromium() {
 	fi
 
 	loc="$(flatpak info --show-location "$id" 2>/dev/null)"
-	if [[ -n $loc && -d "$loc/files" ]] \
-		&& [[ -n "$(find "$loc/files" -maxdepth 4 \
-			\( -name 'chrome_crashpad_handler' -o -name 'app.asar' \
-			   -o -name 'libcef.so' -o -name 'v8_context_snapshot.bin' \) \
-			-print -quit 2>/dev/null)" ]]
-	then
+	if [[ -n $loc ]] && _mca_find_markers "$loc/files" 4; then
 		MCA_DETECT_MEMO[flatpak:$id]=yes
 		return 0
 	fi
