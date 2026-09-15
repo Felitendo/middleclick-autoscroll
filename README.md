@@ -53,13 +53,13 @@ You can also press `[4]` for more settings.
 
 ## How to install
 
-**Arch (for the cachyos enjoyers)**
+**Arch**
 
 ```bash
 yay -S middleclick-autoscroll
 ```
 
-**Fedora (for the mentally stable)**
+**Fedora**
 
 ```bash
 sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
@@ -67,7 +67,7 @@ sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
 sudo dnf install middleclick-autoscroll
 ```
 
-**Bazzite (for the reboot enjoyers)**
+**Bazzite**
 
 ```bash
 sudo curl -fsSL -o /etc/yum.repos.d/middleclick-autoscroll.repo \
@@ -76,7 +76,7 @@ sudo rpm-ostree install middleclick-autoscroll
 systemctl reboot
 ```
 
-**Debian (for the elderly)**
+**Debian**
 
 ```bash
 sudo install -d -m 0755 /etc/apt/keyrings
@@ -87,7 +87,7 @@ echo "deb [signed-by=/etc/apt/keyrings/middleclick-autoscroll.gpg] https://felit
 sudo apt update && sudo apt install middleclick-autoscroll
 ```
 
-**openSUSE (for the both of you)**
+**openSUSE**
 
 ```bash
 sudo rpm --import https://felitendo.github.io/middleclick-autoscroll/KEY.gpg
