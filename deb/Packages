@@ -155,10 +155,10 @@ Maintainer: Felitendo <felitendoyt@gmail.com>
 Depends: bash (>= 4.2), coreutils, findutils, grep, sed, mawk | gawk | original-awk
 Recommends: gettext-base, systemd, desktop-file-utils
 Filename: ./middleclick-autoscroll_1.5.1_all.deb
-Size: 46940
-MD5sum: 3f8ab363b29e95f224d89dd0eb2a7dc1
-SHA1: 70120a56b4059a87c52aca449b310e630cbdc038
-SHA256: 4ad1abbbda0202f109046e7cbd980d89f428f8dcfa2ffae43330ac77ed0c2c56
+Size: 46932
+MD5sum: 4cad3fe99518463a266cb0de3bba5e83
+SHA1: d5923ca9e1e911ff9b19ed1c3f1511b2eff8752e
+SHA256: cbe16c7d91bec102d8d1314e2245a895d065c59f281fceb65dceedd16e9c939d
 Section: utils
 Priority: optional
 Homepage: https://github.com/Felitendo/middleclick-autoscroll
