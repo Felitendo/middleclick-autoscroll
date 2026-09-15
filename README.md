@@ -113,6 +113,10 @@ Browsers get the same thing but this time without "blink":
 
 But both do the same ¯\_(ツ)_/¯
 
+Except in Helium and Brave, which have their own names for it
+(`HeliumMiddleClickAutoscroll`, and Brave's is actually spelled
+`MiddelButtonClickAutoscroll`), so browsers get those as well.
+
 New apps are picked up by a systemd path unit that watches the
 relevant directories. If you hate systemd; `middleclick-autoscroll apply` does the
 same thing manually.

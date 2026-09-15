@@ -35,15 +35,19 @@ MCA_PRETTY="Middle-Click Autoscroll"
 # the one that always works.
 MCA_FLAG="--enable-blink-features=MiddleClickAutoscroll"
 
-# Helium ships the feature under its own name and does not answer to the
-# Chromium one, so browsers are asked for both. A name a browser does not know
-# is ignored, which is what makes one list safe to hand to all of them.
-MCA_BROWSER_FLAG="--enable-features=MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
+# Two browsers do not answer to the Chromium name. Helium ships the feature
+# under its own name and sets the runtime flag from that alone. Brave takes
+# the generated feature away and switches the flag on from one of its own,
+# spelled MiddelButtonClickAutoscroll - the typo is in Brave's source, and the
+# correct spelling does nothing. So browsers are asked for all three. A name a
+# browser does not know is ignored, which is what makes one list safe to hand
+# to all of them.
+MCA_BROWSER_FLAG="--enable-features=MiddleClickAutoscroll,HeliumMiddleClickAutoscroll,MiddelButtonClickAutoscroll"
 
 # The feature names on their own, for merging into a list that an application
 # (or the user) already carries, and for taking them back out again.
 MCA_FEATURE="MiddleClickAutoscroll"
-MCA_BROWSER_FEATURES="MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
+MCA_BROWSER_FEATURES="MiddleClickAutoscroll,HeliumMiddleClickAutoscroll,MiddelButtonClickAutoscroll"
 
 # Bumped when the flags above change, and when what gets written where does.
 # An installation that was set up by a version with a different answer is taken
@@ -52,7 +56,10 @@ MCA_BROWSER_FEATURES="MiddleClickAutoscroll,HeliumMiddleClickAutoscroll"
 #
 # 3 is what takes -noverifyfiles back out of the Steam entries an older version
 # put it in.
-MCA_FLAG_SCHEME=3
+#
+# 4 adds Brave's name to the browser list, which an entry edited in place would
+# otherwise never get.
+MCA_FLAG_SCHEME=4
 
 MCA_LIBDIR="${MCA_LIBDIR:-@LIBDIR@}"
 MCA_LOCALEDIR="${MCA_LOCALEDIR:-@LOCALEDIR@}"

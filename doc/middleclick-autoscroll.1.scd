@@ -26,10 +26,11 @@ runtime flags - but it is not on the list of flags Chromium warns about, so the
 browser does not put a bar reading "You are using an unsupported command-line
 flag" above every page. That spelling only works from Chromium 124 onwards,
 which is why everything else keeps the first one: an application that embeds an
-older Chromium, such as Steam's CEF, has no such bar to show anyway. Helium
-knows the feature under a name of its own and is asked for
-*HeliumMiddleClickAutoscroll* as well; a name a browser does not know is
-ignored. It works on any distribution:
+older Chromium, such as Steam's CEF, has no such bar to show anyway. Two
+browsers know the feature under a name of their own and ignore Chromium's:
+Helium, which is asked for *HeliumMiddleClickAutoscroll* as well, and Brave,
+which is asked for *MiddelButtonClickAutoscroll* - spelled the way Brave spells
+it. A name a browser does not know is ignored. It works on any distribution:
 which of the routes below an application takes is read off its launcher, not
 assumed from where the launcher came from.
 
